@@ -1,9 +1,7 @@
 @inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
 
-@inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
-
 <div class="sidebar-project">
-    <label for="sidebarProject">Proyecto Asana</label>
+    <label for="sidebarProject">General International</label>
     <select id="sidebarProject" @bind="selectedProjectGid" @bind:after="OnProjectChanged">
         @foreach (var project in ProjectSelection.Projects)
         {

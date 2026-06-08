@@ -2,23 +2,23 @@
 
 <div class="shell">
     <aside class="sidebar">
-        <h2>LFS</h2>
+        <div class="sidebar-brand">
+            <h2 class="flex items-center gap-2">
+                <span class="sidebar-logo" aria-hidden="true">L</span>
+                <span>LFS</span>
+            </h2>
+            <p class="sidebar-brand-sub">Proyecto Asana</p>
+        </div>
         <ProjectSelector @rendermode="InteractiveServer" />
-        <a href="/">Dashboard</a>
-        <a href="/pipeline">Pipeline</a>
-        <a href="/mover-oportunidades">Mover oportunidades</a>
-        <a href="/historial-movimientos">Historial movimientos</a>
-        <a href="/oportunidades">Oportunidades</a>
-        <hr style="border-color:#475467;margin:16px 0;" />
-        <strong style="font-size:12px;color:#98a2b3;">MAIL</strong>
-        <a href="/mail">Mail Dashboard</a>
-        <a href="/mail/import">Importar contactos</a>
-        <a href="/mail/phase/1">Fase 1</a>
-        <a href="/mail/phase/2">Fase 2</a>
-        <a href="/mail/phase/3">Fase 3</a>
-        <a href="/mail/phase/4">Fase 4</a>
-        <a href="/mail/phase/5">Fase 5</a>
-        <a href="/mail/gmail">Gmail</a>
+        <nav class="sidebar-nav" aria-label="Main">
+            <NavLink class="sidebar-nav-link" ActiveClass="is-active" href="/" Match="NavLinkMatch.All">Dashboard</NavLink>
+            <NavLink class="sidebar-nav-link" ActiveClass="is-active" href="/pipeline">Pipeline</NavLink>
+            <NavLink class="sidebar-nav-link" ActiveClass="is-active" href="/mover-oportunidades">Mover oportunidades</NavLink>
+            <NavLink class="sidebar-nav-link" ActiveClass="is-active" href="/historial-movimientos">Historial movimientos</NavLink>
+            <NavLink class="sidebar-nav-link" ActiveClass="is-active" href="/oportunidades">Oportunidades</NavLink>
+            <hr class="sidebar-divider" />
+            <SidebarMailNav />
+        </nav>
     </aside>
     <main class="content">
         @Body

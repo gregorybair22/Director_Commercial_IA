@@ -127,7 +127,9 @@ public class MailGmailOAuthService : IMailGmailOAuthService
         {
             IsConnected = true,
             Email = row.ConnectedEmail,
-            DisplayName = row.DisplayName
+            DisplayName = row.DisplayName,
+            ConnectedAt = row.ConnectedAt,
+            UpdatedAt = row.UpdatedAt
         };
     }
 

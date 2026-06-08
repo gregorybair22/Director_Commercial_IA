@@ -8,105 +8,292 @@
 @inject NavigationManager Nav
 @using Microsoft.EntityFrameworkCore
 
-<h1>Phase @Phase</h1>
-<p class="muted">Select recipients, compose your message, then send through your connected Gmail account.</p>
-
-@if (!string.IsNullOrWhiteSpace(message))
-{
-    <div class="alert ok">@message</div>
-}
-@if (!string.IsNullOrWhiteSpace(error))
-{
-    <div class="alert error">@error</div>
-}
-
-@if (!gmailConnected)
-{
-    <div class="alert error">
-        <strong>Gmail is not connected.</strong> <a href="/mail/gmail">Open Gmail settings</a> and use Connect Gmail.
+<div class="mail-phase-page">
+    <div class="mail-phase-topbar">
+        <a href="/mail" class="mail-phase-back">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to pipeline
+        </a>
+        <button type="button" class="mail-phase-guide-btn" title="Phase guide">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><path d="M15 3h6v6M10 14 21 3" />
+            </svg>
+            View phase guide
+        </button>
     </div>
-}
 
-<div class="cards">
-    <div class="card"><strong>@metrics.TotalInPhase</strong><span>In phase</span></div>
-    <div class="card"><strong>@metrics.Replied</strong><span>Replied</span></div>
-    <div class="card"><strong>@metrics.NotReplied</strong><span>Not replied</span></div>
-    <div class="card warning"><strong>@metrics.Bounced</strong><span>Bounced</span></div>
-</div>
+    <header class="mail-phase-hero">
+        <h1>
+            Phase @Phase
+            <span class="mail-phase-badge">@PhaseMeta.Title</span>
+        </h1>
+        <p class="mail-phase-lead">Select recipients, compose your message, then send through your connected Gmail account.</p>
+    </header>
 
-<div class="actions">
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert ok">@message</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert error">@error</div>
+    }
+
+    @if (!gmailConnected)
+    {
+        <div class="alert error">
+            <strong>Gmail is not connected.</strong>
+            <a href="/mail/gmail">Open Gmail settings</a> and use Connect Gmail.
+        </div>
+    }
+
+    <section class="mail-phase-kpis" aria-label="Phase metrics">
+        <article class="mail-phase-kpi mail-phase-kpi-blue">
+            <span class="mail-phase-kpi-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+            </span>
+            <div>
+                <strong>@metrics.TotalInPhase</strong>
+                <span>In phase</span>
+            </div>
+        </article>
+        <article class="mail-phase-kpi mail-phase-kpi-green">
+            <span class="mail-phase-kpi-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+            </span>
+            <div>
+                <strong>@metrics.Replied</strong>
+                <span>Replied</span>
+            </div>
+        </article>
+        <article class="mail-phase-kpi mail-phase-kpi-orange">
+            <span class="mail-phase-kpi-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
+                </svg>
+            </span>
+            <div>
+                <strong>@metrics.NotReplied</strong>
+                <span>Not replied</span>
+            </div>
+        </article>
+        <article class="mail-phase-kpi mail-phase-kpi-red">
+            <span class="mail-phase-kpi-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M12 8v4M12 16h.01" />
+                </svg>
+            </span>
+            <div>
+                <strong>@metrics.Bounced</strong>
+                <span>Bounced</span>
+            </div>
+        </article>
+    </section>
+
     @if (Phase >= 2)
     {
-        <button class="secondary" @onclick="CheckReplies" disabled="@loading">Check replies</button>
+        <div class="mail-phase-toolbar-actions">
+            <button type="button" class="mail-phase-check-btn" @onclick="CheckReplies" disabled="@loading">Check replies</button>
+        </div>
     }
-</div>
 
-<div class="card task-section">
-    <h3>Compose email</h3>
-    <div class="field-group field-group-wide">
-        <label>Subject line</label>
-        <input @bind="subject" placeholder="e.g. Follow-up – {{Company}}" />
-    </div>
-    <div class="field-group field-group-wide">
-        <label>Message body (HTML)</label>
-        <textarea @bind="body" rows="12" placeholder="Write your HTML email here…"></textarea>
-    </div>
-    <div class="mail-merge-fields">
-        <span class="muted">Merge fields:</span>
-        @foreach (var field in mergeFields)
-        {
-            <button type="button" class="secondary mail-merge-chip" @onclick="() => InsertField(field)">@field</button>
-        }
-    </div>
-    <div class="actions">
-        <button @onclick="SendSelected" disabled="@loading || !selectedIds.Any()">Send to selected (@selectedIds.Count)</button>
-    </div>
-</div>
+    <section class="mail-phase-compose-card">
+        <div class="mail-phase-card-head">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+            Compose email
+        </div>
+        <div class="mail-phase-compose-body">
+            <div class="mail-phase-compose-layout">
+                <div class="mail-phase-compose-main">
+                    <div class="mail-phase-field">
+                        <label for="phase-subject">Subject line</label>
+                        <input id="phase-subject" @bind="subject" @onfocus="() => focusedField = ComposeField.Subject" placeholder="Hello {{FirstName}}" />
+                    </div>
 
-<div class="card task-section">
-    <h3>Recipients</h3>
-    <table>
-        <thead>
-            <tr>
-                <th><input type="checkbox" @onchange="ToggleAll" checked="@allSelected" /></th>
-                <th>Name</th><th>Company</th><th>Email</th><th>Country</th><th>Reply</th><th>Bounce</th><th>Sent</th><th></th>
-            </tr>
-        </thead>
-        <tbody>
-        @if (list.Items.Count == 0)
+                    <div class="mail-phase-field">
+                        <label for="phase-body">Message body (HTML)</label>
+                        <div class="mail-phase-editor-wrap">
+                            <div class="mail-phase-editor-toolbar" aria-label="Formatting">
+                                <button type="button" @onclick='() => WrapBody("<p>", "</p>")'>Normal</button>
+                                <button type="button" @onclick='() => WrapBody("<strong>", "</strong>")'><strong>B</strong></button>
+                                <button type="button" @onclick='() => WrapBody("<em>", "</em>")'><em>I</em></button>
+                                <button type="button" @onclick='() => WrapBody("<u>", "</u>")'><span class="underline">U</span></button>
+                                <button type="button" @onclick='() => InsertIntoBody("<a href=\"\">link</a>")'>Link</button>
+                                <button type="button" @onclick='() => InsertIntoBody("<ul><li></li></ul>")'>List</button>
+                                <button type="button" @onclick='() => InsertIntoBody("<br />")'>Break</button>
+                            </div>
+                            @if (showHtml)
+                            {
+                                <textarea id="phase-body" @bind="body" @onfocus="() => focusedField = ComposeField.Body" rows="12" placeholder="Write your HTML email here…"></textarea>
+                            }
+                            else
+                            {
+                                <div class="mail-phase-preview-box">@((MarkupString)body)</div>
+                            }
+                            <div class="mail-phase-editor-footer">
+                                <button type="button" class="mail-phase-mode-btn @(showHtml ? "is-active" : "")" @onclick="() => showHtml = true">HTML</button>
+                                <button type="button" class="mail-phase-mode-btn @(!showHtml ? "is-active" : "")" @onclick="() => showHtml = false">Preview</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="mail-phase-aside" aria-label="Merge fields">
+                    <h4>Merge fields</h4>
+                    <div class="mail-phase-merge-fields">
+                        @foreach (var field in mergeFields)
+                        {
+                            <button type="button" class="mail-phase-merge-chip" @onclick="() => InsertField(field)">@field</button>
+                        }
+                    </div>
+                    <button type="button" class="mail-phase-send-btn" @onclick="SendSelected" disabled="@(loading || selectedIds.Count == 0 || !gmailConnected)">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <path d="M22 2 11 13" /><path d="M22 2 15 22 11 13 2 9 22 2z" />
+                        </svg>
+                        Send to selected (@selectedIds.Count)
+                    </button>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    <section class="mail-phase-recipients-card">
+        <div class="mail-phase-recipients-head">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                Recipients
+            </h3>
+            <div class="mail-phase-recipients-tools">
+                <div class="mail-phase-search">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                    </svg>
+                    <input placeholder="Search recipients…" @bind="searchTerm" @bind:event="oninput" @bind:after="ApplySearch" />
+                </div>
+                <button type="button" class="mail-phase-filter-btn" @onclick="() => showFilters = !showFilters">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+                    </svg>
+                    Filter
+                </button>
+            </div>
+        </div>
+
+        @if (showFilters)
         {
-            <tr><td colspan="9">No contacts in this phase. <a href="/mail/import">Import contacts</a>.</td></tr>
+            <div class="mail-phase-filters">
+                <div class="mail-phase-field">
+                    <label>Country</label>
+                    <input @bind="filterCountry" @bind:after="ApplySearch" placeholder="Any" />
+                </div>
+                <div class="mail-phase-field">
+                    <label>Language</label>
+                    <input @bind="filterLanguage" @bind:after="ApplySearch" placeholder="Any" />
+                </div>
+                <div class="mail-phase-field">
+                    <label>Replied</label>
+                    <select @bind="filterReplied" @bind:after="ApplySearch">
+                        <option value="">Any</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+                <div class="mail-phase-field">
+                    <label>Bounced</label>
+                    <select @bind="filterBounced" @bind:after="ApplySearch">
+                        <option value="">Any</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+            </div>
         }
-        else
-        {
-            @foreach (var r in list.Items)
-            {
-                <tr class="@(r.IsResponded ? "row-replied" : "")">
-                    <td><input type="checkbox" checked="@selectedIds.Contains(r.Id)" @onchange="e => ToggleRow(r.Id, e)" /></td>
-                    <td>@r.FullName</td>
-                    <td>@r.Company</td>
-                    <td>@r.Email</td>
-                    <td>@r.Country</td>
-                    <td>@(r.IsResponded ? "Yes" : "No")</td>
-                    <td>@(r.IsBounced ? r.BounceType.ToString() : "—")</td>
-                    <td>@(r.PhaseEmailSent ? "Yes" : "No")</td>
-                    <td><a href="/mail/contacts/@r.Id">Detail</a></td>
-                </tr>
-            }
-        }
-        </tbody>
-    </table>
-    <p class="muted">Showing @list.Items.Count of @list.TotalCount — page @listPage</p>
-    <div class="actions">
-        @if (listPage > 1)
-        {
-            <button class="secondary" @onclick="() => ChangePage(listPage - 1)">Previous</button>
-        }
-        @if (list.Items.Count + (listPage - 1) * 50 < list.TotalCount)
-        {
-            <button class="secondary" @onclick="() => ChangePage(listPage + 1)">Next</button>
-        }
-    </div>
+
+        <div class="mail-phase-table-wrap">
+            <table class="mail-phase-table">
+                <thead>
+                    <tr>
+                        <th class="w-10">
+                            <input type="checkbox" @onchange="ToggleAll" checked="@allSelected" aria-label="Select all rows" />
+                        </th>
+                        <th>Name / Email</th>
+                        <th>Company</th>
+                        <th>Country</th>
+                        <th>Replied</th>
+                        <th>Bounce</th>
+                        <th>Sent</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (list.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="8" class="py-8 text-center text-slate-500">
+                            No contacts in this phase. <a href="/mail/import">Import contacts</a>.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var r in list.Items)
+                    {
+                        <tr class="@(r.IsResponded ? "row-replied" : "")">
+                            <td>
+                                <input type="checkbox" checked="@selectedIds.Contains(r.Id)" @onchange="e => ToggleRow(r.Id, e)" aria-label="@($"Select {r.FullName}")" />
+                            </td>
+                            <td>
+                                <div class="mail-phase-recipient">
+                                    <span class="mail-phase-avatar" style="background:@AvatarColor(r.FullName)">@GetInitials(r.FullName)</span>
+                                    <div class="min-w-0">
+                                        <div class="mail-phase-recipient-name">@r.FullName</div>
+                                        <div class="mail-phase-recipient-email">@r.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@r.Company</td>
+                            <td>
+                                <span class="mail-phase-country">
+                                    <span aria-hidden="true">@CountryFlag(r.Country)</span>
+                                    @r.Country
+                                </span>
+                            </td>
+                            <td>
+                                <span class="mail-phase-status">
+                                    <span class="mail-phase-status-dot @(r.IsResponded ? "yes" : "no")"></span>
+                                    @(r.IsResponded ? "Yes" : "No")
+                                </span>
+                            </td>
+                            <td>@(r.IsBounced ? r.BounceType.ToString() : "—")</td>
+                            <td>@(r.PhaseEmailSent ? "Yes" : "No")</td>
+                            <td><a href="/mail/contacts/@r.Id" class="mail-phase-detail-link">Detail</a></td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mail-phase-table-footer">
+            <p class="m-0 text-sm text-slate-500">Showing @list.Items.Count of @list.TotalCount</p>
+            <div class="mail-phase-pagination">
+                <button type="button" class="mail-phase-page-btn" @onclick="() => ChangePage(listPage - 1)" disabled="@(listPage <= 1)">Previous</button>
+                <span class="mail-phase-page-num">@listPage</span>
+                <button type="button" class="mail-phase-page-btn" @onclick="() => ChangePage(listPage + 1)" disabled="@(!HasNextPage)">Next</button>
+            </div>
+        </div>
+    </section>
 </div>
 
 @code {
@@ -117,45 +304,106 @@
     private HashSet<int> selectedIds = new();
     private bool allSelected;
     private int listPage = 1;
+    private int loadedPhase;
     private string subject = "";
     private string body = "";
+    private string searchTerm = "";
+    private string filterCountry = "";
+    private string filterLanguage = "";
+    private string filterReplied = "";
+    private string filterBounced = "";
+    private bool showFilters;
+    private bool showHtml = true;
     private bool gmailConnected;
     private string? message;
     private string? error;
     private bool loading;
+    private ComposeField focusedField = ComposeField.Body;
+
+    private bool HasNextPage => listPage * list.PageSize < list.TotalCount;
+
+    private (string Title, string Description) PhaseMeta => Phase switch
+    {
+        1 => ("First outreach", "First outreach to imported contacts."),
+        2 => ("Follow up", "Follow up with non-responders."),
+        3 => ("Continue", "Continue the conversation."),
+        4 => ("Engagement", "Late-stage engagement."),
+        5 => ("Final step", "Final step before archiving or handoff."),
+        _ => ("Workflow step", "Mail workflow phase.")
+    };
 
     private static readonly string[] mergeFields =
         ["{{FirstName}}", "{{LastName}}", "{{Company}}", "{{Country}}", "{{Language}}", "{{CustomerType}}"];
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (Phase < 1 || Phase > 5) Phase = 1;
-        await LoadData();
-    }
+    private enum ComposeField { Subject, Body }
 
     protected override async Task OnParametersSetAsync()
     {
-        if (Phase < 1 || Phase > 5) Phase = 1;
+        if (Phase < 1 || Phase > 5)
+        {
+            Nav.NavigateTo("/mail/phase/1");
+            return;
+        }
+
+        if (loadedPhase != Phase)
+        {
+            loadedPhase = Phase;
+            listPage = 1;
+            subject = "";
+            body = "";
+            selectedIds.Clear();
+            allSelected = false;
+        }
+
         await LoadData();
     }
 
     private async Task LoadData()
     {
-        var filter = new MailContactListFilterDto { Phase = Phase, Page = listPage, PageSize = 50 };
+        var filter = new MailContactListFilterDto
+        {
+            Phase = Phase,
+            Page = listPage,
+            PageSize = 50,
+            Search = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm.Trim(),
+            Country = string.IsNullOrWhiteSpace(filterCountry) ? null : filterCountry.Trim(),
+            Language = string.IsNullOrWhiteSpace(filterLanguage) ? null : filterLanguage.Trim(),
+            Replied = ParseTriState(filterReplied),
+            Bounced = ParseTriState(filterBounced)
+        };
+
         list = await ContactQuery.ListAsync(filter);
         metrics = await ContactQuery.GetPhaseMetricsAsync(Phase);
         var gmailStatus = await GmailOAuth.GetStatusAsync();
         gmailConnected = gmailStatus.IsConnected;
 
-        var tpl = await Db.MailEmailTemplates.AsNoTracking()
-            .Where(t => t.PhaseNumber == Phase && t.IsDefault)
-            .OrderBy(t => t.Id)
-            .FirstOrDefaultAsync();
-        if (tpl != null && string.IsNullOrEmpty(subject))
+        if (string.IsNullOrEmpty(subject) && string.IsNullOrEmpty(body))
         {
-            subject = tpl.SubjectTemplate;
-            body = tpl.BodyTemplate;
+            var tpl = await Db.MailEmailTemplates.AsNoTracking()
+                .Where(t => t.PhaseNumber == Phase && t.IsDefault)
+                .OrderBy(t => t.Id)
+                .FirstOrDefaultAsync();
+            if (tpl != null)
+            {
+                subject = tpl.SubjectTemplate;
+                body = tpl.BodyTemplate;
+            }
         }
+
+        allSelected = list.Items.Count > 0 && list.Items.All(i => selectedIds.Contains(i.Id));
+    }
+
+    private static bool? ParseTriState(string value) => value switch
+    {
+        "true" => true,
+        "false" => false,
+        _ => null
+    };
+
+    private async Task ApplySearch()
+    {
+        listPage = 1;
+        await LoadData();
     }
 
     private void ToggleAll(ChangeEventArgs e)
@@ -176,7 +424,17 @@
         allSelected = list.Items.Count > 0 && list.Items.All(i => selectedIds.Contains(i.Id));
     }
 
-    private void InsertField(string field) => body += field;
+    private void InsertField(string field)
+    {
+        if (focusedField == ComposeField.Subject)
+            subject += field;
+        else
+            body += field;
+    }
+
+    private void InsertIntoBody(string snippet) => body += snippet;
+
+    private void WrapBody(string open, string close) => body += $"{open}text{close}";
 
     private async Task CheckReplies()
     {
@@ -200,7 +458,7 @@
 
     private async Task SendSelected()
     {
-        if (!selectedIds.Any()) return;
+        if (selectedIds.Count == 0) return;
         loading = true;
         error = null;
         try
@@ -224,7 +482,41 @@
 
     private async Task ChangePage(int page)
     {
+        if (page < 1) return;
+        if (page > listPage && !HasNextPage) return;
         listPage = page;
         await LoadData();
+    }
+
+    private static string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
+    }
+
+    private static string AvatarColor(string seed)
+    {
+        var colors = new[] { "#3b82f6", "#8b5cf6", "#0d9488", "#d97706", "#dc2626", "#2563eb", "#7c3aed" };
+        var hash = Math.Abs(seed.GetHashCode());
+        return colors[hash % colors.Length];
+    }
+
+    private static string CountryFlag(string country)
+    {
+        if (string.IsNullOrWhiteSpace(country)) return "🌐";
+        var c = country.Trim().ToLowerInvariant();
+        return c switch
+        {
+            "spain" or "españa" or "espana" or "es" => "🇪🇸",
+            "germany" or "alemania" or "de" => "🇩🇪",
+            "italy" or "italia" or "it" => "🇮🇹",
+            "france" or "francia" or "fr" => "🇫🇷",
+            "united states" or "usa" or "us" => "🇺🇸",
+            "united kingdom" or "uk" or "gb" => "🇬🇧",
+            "mexico" or "méxico" or "mx" => "🇲🇽",
+            _ => "🌐"
+        };
     }
 }

@@ -1,0 +1,75 @@
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="sidebar-submenu @(mailExpanded ? "is-open" : "")">
+    <button type="button"
+            class="sidebar-submenu-toggle sidebar-submenu-root @(IsMailRoute ? "is-active-parent" : "")"
+            aria-expanded="@mailExpanded"
+            aria-controls="sidebar-mail-panel"
+            @onclick="ToggleMail">
+        <span>Mail</span>
+        <svg class="sidebar-submenu-chevron @(mailExpanded ? "is-open" : "")" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+        </svg>
+    </button>
+
+    @if (mailExpanded)
+    {
+        <div id="sidebar-mail-panel" class="sidebar-submenu-items">
+            <NavLink class="sidebar-nav-link sidebar-nav-sublink" ActiveClass="is-active" href="/mail" Match="NavLinkMatch.All">Mail Dashboard</NavLink>
+            <NavLink class="sidebar-nav-link sidebar-nav-sublink" ActiveClass="is-active" href="/mail/import">Importar contactos</NavLink>
+            @foreach (var phase in PhaseMenuItems)
+            {
+                <NavLink class="sidebar-nav-link sidebar-nav-sublink"
+                         ActiveClass="is-active"
+                         href="@phase.Href"
+                         Match="NavLinkMatch.All">
+                    @phase.Label
+                </NavLink>
+            }
+            <NavLink class="sidebar-nav-link sidebar-nav-sublink" ActiveClass="is-active" href="/mail/gmail">Gmail</NavLink>
+        </div>
+    }
+</div>
+
+@code {
+    private bool mailExpanded;
+
+    private static readonly PhaseMenuItem[] PhaseMenuItems =
+    [
+        new("Fase 1", "/mail/phase/1"),
+        new("Fase 2", "/mail/phase/2"),
+        new("Fase 3", "/mail/phase/3"),
+        new("Fase 4", "/mail/phase/4"),
+        new("Fase 5", "/mail/phase/5")
+    ];
+
+    private bool IsMailRoute => GetRelativePath().StartsWith("mail", StringComparison.OrdinalIgnoreCase);
+
+    private sealed record PhaseMenuItem(string Label, string Href);
+
+    protected override void OnInitialized()
+    {
+        mailExpanded = IsMailRoute;
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (GetRelativePath().StartsWith("mail", StringComparison.OrdinalIgnoreCase))
+            mailExpanded = true;
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetRelativePath()
+    {
+        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+        return relative.TrimEnd('/');
+    }
+
+    private void ToggleMail() => mailExpanded = !mailExpanded;
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}

@@ -5,6 +5,8 @@ public class MailGmailStatusDto
     public bool IsConnected { get; set; }
     public string? Email { get; set; }
     public string? DisplayName { get; set; }
+    public DateTime? ConnectedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
 
 public interface IMailGmailOAuthService

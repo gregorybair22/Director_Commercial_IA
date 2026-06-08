@@ -2,42 +2,209 @@
 @rendermode InteractiveServer
 @inject IMailGmailOAuthService GmailOAuth
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
-<h1>Gmail connection</h1>
-<p class="muted">Connect a Google account with Gmail API access so the app can send mail and read replies.</p>
+<div class="mail-gmail-page">
+    <header class="mail-gmail-header">
+        <div>
+            <h1>Gmail connection</h1>
+            <p class="mail-gmail-lead">Connect a Google account with Gmail API access so the app can send mail and read replies.</p>
+        </div>
+        <button type="button" class="mail-gmail-guide-btn" title="Setup guide">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><path d="M15 3h6v6M10 14 21 3" />
+            </svg>
+            View setup guide
+        </button>
+    </header>
 
-@if (!string.IsNullOrWhiteSpace(message))
-{
-    <div class="alert ok">@message</div>
-}
-@if (!string.IsNullOrWhiteSpace(error))
-{
-    <div class="alert error">@error</div>
-}
-
-<div class="card task-section">
-    <h3>Setup checklist</h3>
-    <p>In Google Cloud Console: enable <strong>Gmail API</strong>, create a <strong>Web application</strong> OAuth 2.0 client, and add this redirect URI exactly:</p>
-    <pre class="mail-code-block">@callbackUrl</pre>
-    <p class="muted">Put <code>ClientId</code> and <code>ClientSecret</code> in <code>appsettings.json</code> under <code>Gmail</code>.</p>
-</div>
-
-<div class="card task-section">
-    <h3>Connection status</h3>
-    @if (status?.IsConnected == true)
+    @if (!string.IsNullOrWhiteSpace(message))
     {
-        <div class="alert ok">Connected as <strong>@status.Email</strong></div>
-        <form method="post" action="/mail/gmail-disconnect" onsubmit="return confirm('Disconnect Gmail?');">
-            <button type="submit" class="secondary">Disconnect Gmail</button>
-        </form>
+        <div class="alert ok">@message</div>
     }
-    else
+    @if (!string.IsNullOrWhiteSpace(error))
     {
-        <p class="muted">No active connection. You will be redirected to Google to approve access.</p>
-        <form method="post" action="/mail/gmail-connect">
-            <button type="submit">Connect Gmail</button>
-        </form>
+        <div class="alert error">@error</div>
     }
+
+    <section class="mail-gmail-card">
+        <div class="mail-gmail-setup-grid">
+            <div class="mail-gmail-setup-main">
+                <h2 class="mail-gmail-section-title">
+                    <span class="mail-gmail-section-title-icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                            <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
+                    </span>
+                    Setup checklist
+                </h2>
+                <p class="mail-gmail-setup-intro">In Google Cloud Console: enable</p>
+
+                <div class="mail-gmail-checklist">
+                    <div class="mail-gmail-check-item">
+                        <span class="mail-gmail-check-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5" /></svg>
+                        </span>
+                        <div>
+                            <strong>Gmail API</strong>
+                            <span>Create a</span>
+                        </div>
+                    </div>
+                    <div class="mail-gmail-check-item">
+                        <span class="mail-gmail-check-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5" /></svg>
+                        </span>
+                        <div>
+                            <strong>Web application</strong>
+                            <span>OAuth 2.0 client, and add this redirect URI exactly:</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mail-gmail-uri-box">
+                    <code id="gmail-callback-uri">@callbackUrl</code>
+                    <button type="button" class="mail-gmail-copy-btn" title="Copy redirect URI" @onclick="CopyCallbackUrl">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                    </button>
+                </div>
+
+                <p class="mail-gmail-footnote">Put <code>ClientId</code> and <code>ClientSecret</code> in <code>appsettings.json</code> under <code>Gmail</code>.</p>
+            </div>
+
+            <aside class="mail-gmail-info-box" aria-label="Gmail API information">
+                <h4>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+                    </svg>
+                    What is this?
+                </h4>
+                <p>We use Gmail API to send emails from your account and read replies directly in the app.</p>
+                <a href="https://developers.google.com/gmail/api" target="_blank" rel="noopener noreferrer" class="mail-gmail-info-link">
+                    Learn more about Gmail API
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                </a>
+                <div class="mail-gmail-info-art" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 72" fill="none">
+                        <rect x="12" y="18" width="36" height="28" rx="4" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5" />
+                        <path d="M12 24l18 12L48 24" stroke="#3b82f6" stroke-width="1.5" />
+                        <path d="M58 38 Q110 18 152 34" stroke="#93c5fd" stroke-width="2" stroke-dasharray="4 4" />
+                        <circle cx="168" cy="34" r="18" fill="#fff" stroke="#e2e8f0" stroke-width="1.5" />
+                        <text x="168" y="39" text-anchor="middle" font-size="14" fill="#ea4335" font-family="Arial,sans-serif" font-weight="700">M</text>
+                    </svg>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <section class="mail-gmail-card">
+        <div class="mail-gmail-status-head">
+            <h2>Connection status</h2>
+            <p>Manage your connected Gmail account.</p>
+        </div>
+        <div class="mail-gmail-status-body">
+            @if (status?.IsConnected == true)
+            {
+                <div class="mail-gmail-connected-banner">
+                    <div class="mail-gmail-connected-left">
+                        <span class="mail-gmail-connected-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="mail-gmail-connected-label">Connected as</div>
+                            <div class="mail-gmail-connected-email">@status.Email</div>
+                        </div>
+                    </div>
+                    <span class="mail-gmail-active-badge">
+                        <span class="mail-gmail-active-dot"></span>
+                        Active
+                    </span>
+                </div>
+
+                <div class="mail-gmail-meta-row">
+                    <div class="mail-gmail-meta-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        <div>
+                            <span class="mail-gmail-meta-label">Permission</span>
+                            <span class="mail-gmail-meta-value">Mail send &amp; read</span>
+                        </div>
+                    </div>
+                    <div class="mail-gmail-meta-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                        </svg>
+                        <div>
+                            <span class="mail-gmail-meta-label">Connected on</span>
+                            <span class="mail-gmail-meta-value">@FormatConnectedAt(status.ConnectedAt)</span>
+                        </div>
+                    </div>
+                    <div class="mail-gmail-meta-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" />
+                        </svg>
+                        <div>
+                            <span class="mail-gmail-meta-label">Last sync</span>
+                            <span class="mail-gmail-meta-value">@FormatLastSync(status.UpdatedAt)</span>
+                        </div>
+                    </div>
+                    <div class="mail-gmail-meta-item sm:justify-end lg:items-center">
+                        <form method="post" action="/mail/gmail-connect" class="m-0">
+                            <button type="submit" class="mail-gmail-reconnect-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                    <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" />
+                                </svg>
+                                Reconnect Gmail
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <form method="post" action="/mail/gmail-disconnect" onsubmit="return confirm('Disconnect Gmail?');">
+                    <button type="submit" class="mail-gmail-disconnect-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        Disconnect Gmail
+                    </button>
+                </form>
+            }
+            else
+            {
+                <div class="mail-gmail-connect-panel">
+                    <p>No active Gmail connection. You will be redirected to Google to approve access.</p>
+                    <form method="post" action="/mail/gmail-connect">
+                        <button type="submit" class="mail-gmail-connect-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                            </svg>
+                            Connect Gmail
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </section>
+
+    <aside class="mail-gmail-security" role="note">
+        <span class="mail-gmail-security-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+        </span>
+        <div class="mail-gmail-security-text">
+            <strong>Your data is secure</strong>
+            <p>We never store your Gmail password. All connections use secure OAuth 2.0 authentication and can be revoked at any time.</p>
+        </div>
+        <a href="https://developers.google.com/identity/protocols/oauth2" target="_blank" rel="noopener noreferrer" class="mail-gmail-info-link shrink-0">
+            Learn more about security
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </a>
+    </aside>
 </div>
 
 @code {
@@ -58,5 +225,36 @@
             message = "Gmail connected.";
         if (!string.IsNullOrEmpty(Error))
             error = Error;
+    }
+
+    private async Task CopyCallbackUrl()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", callbackUrl);
+            message = "Redirect URI copied to clipboard.";
+            error = null;
+        }
+        catch
+        {
+            error = "Could not copy to clipboard.";
+        }
+    }
+
+    private static string FormatConnectedAt(DateTime? utc)
+    {
+        if (utc is null) return "—";
+        return utc.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt");
+    }
+
+    private static string FormatLastSync(DateTime? utc)
+    {
+        if (utc is null) return "—";
+        var local = utc.Value.ToLocalTime();
+        var delta = DateTime.Now - local;
+        if (delta.TotalMinutes < 2) return "Just now";
+        if (delta.TotalHours < 1) return $"{(int)delta.TotalMinutes} min ago";
+        if (delta.TotalDays < 1) return $"{(int)delta.TotalHours} hr ago";
+        return local.ToString("MMM d, yyyy h:mm tt");
     }
 }
