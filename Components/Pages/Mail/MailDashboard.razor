@@ -1,0 +1,60 @@
+@page "/mail"
+@rendermode InteractiveServer
+@inject IMailContactQueryService ContactQuery
+
+<h1>Mail Dashboard</h1>
+<p class="muted">Contacts across your five-phase mail workflow. Open a phase to compose, send, and track replies.</p>
+
+@if (phases is not null)
+{
+    <section class="cards">
+        <div class="card"><strong>@pipelineTotal</strong><span>In pipeline</span></div>
+        <div class="card"><strong>@pipelineReplied</strong><span>Replied</span></div>
+        <div class="card"><strong>@pipelineNotReplied</strong><span>Awaiting reply</span></div>
+        <div class="card warning"><strong>@pipelineBounced</strong><span>Bounced</span></div>
+    </section>
+
+    <h2>Pipeline phases</h2>
+    <div class="mail-phase-grid">
+        @foreach (var m in phases)
+        {
+            <a class="card mail-phase-card" href="/mail/phase/@m.Phase">
+                <strong>Phase @m.Phase</strong>
+                <span>@PhaseBlurb(m.Phase)</span>
+                <div class="mail-phase-metrics">
+                    <span>In phase: @m.TotalInPhase</span>
+                    <span>Replied: @m.Replied</span>
+                    <span>Not replied: @m.NotReplied</span>
+                    <span>Bounced: @m.Bounced</span>
+                </div>
+            </a>
+        }
+    </div>
+}
+
+@code {
+    private List<MailPhaseMetricsDto>? phases;
+    private int pipelineTotal, pipelineReplied, pipelineNotReplied, pipelineBounced;
+
+    protected override async Task OnInitializedAsync()
+    {
+        phases = new List<MailPhaseMetricsDto>();
+        for (var p = 1; p <= 5; p++)
+            phases.Add(await ContactQuery.GetPhaseMetricsAsync(p));
+
+        pipelineTotal = phases.Sum(x => x.TotalInPhase);
+        pipelineReplied = phases.Sum(x => x.Replied);
+        pipelineNotReplied = phases.Sum(x => x.NotReplied);
+        pipelineBounced = phases.Sum(x => x.Bounced);
+    }
+
+    private static string PhaseBlurb(int phase) => phase switch
+    {
+        1 => "First outreach to imported contacts.",
+        2 => "Follow up with non-responders.",
+        3 => "Continue the conversation.",
+        4 => "Late-stage engagement.",
+        5 => "Final step before archival or handoff.",
+        _ => "Workflow step."
+    };
+}

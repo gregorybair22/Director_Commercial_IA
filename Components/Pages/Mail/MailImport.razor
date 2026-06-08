@@ -1,0 +1,155 @@
+@page "/mail/import"
+@rendermode InteractiveServer
+@inject IMailExcelImportService ImportService
+@using DirectorComercialIA.Mail.Models
+
+<h1>Import contacts from Excel</h1>
+<p class="muted">Map sheet headers (Nombre, Empresa, Email, Contacto, País, Idioma, Tipo Cliente). Emails are normalized; if a cell lists several addresses, the first one is used.</p>
+
+<div class="card task-section">
+    <h3>Upload and column mapping</h3>
+    <div class="task-form-grid">
+        <div class="field-group field-group-wide">
+            <label>Excel file (.xlsx)</label>
+            <InputFile OnChange="OnFileSelected" accept=".xlsx" />
+        </div>
+        <div class="field-group"><label>First name column</label><input @bind="mapping.FirstName" /></div>
+        <div class="field-group"><label>Last name column</label><input @bind="mapping.LastName" /></div>
+        <div class="field-group"><label>Company</label><input @bind="mapping.Company" /></div>
+        <div class="field-group"><label>Email *</label><input @bind="mapping.Email" required /></div>
+        <div class="field-group"><label>Country</label><input @bind="mapping.Country" /></div>
+        <div class="field-group"><label>Language</label><input @bind="mapping.Language" /></div>
+        <div class="field-group"><label>Customer type</label><input @bind="mapping.CustomerType" /></div>
+        <div class="field-group"><label>Job title / Contacto</label><input @bind="mapping.JobTitle" /></div>
+        <div class="field-group">
+            <label>Duplicates</label>
+            <select @bind="duplicateMode">
+                @foreach (DuplicateImportMode mode in Enum.GetValues<DuplicateImportMode>())
+                {
+                    <option value="@mode">@mode</option>
+                }
+            </select>
+        </div>
+        <div class="field-group"><label>Campaign name (optional)</label><input @bind="campaignName" placeholder="e.g. Q1 outreach" /></div>
+        <div class="field-group field-group-wide">
+            <label><input type="checkbox" @bind="validOnly" /> Import only rows with a valid email</label>
+        </div>
+    </div>
+    <div class="actions">
+        <button @onclick="Preview" disabled="@(fileBytes is null || loading)">@(loading ? "Working..." : "Preview first")</button>
+        <button class="secondary" @onclick="RunImport" disabled="@(fileBytes is null || loading)">Run import</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert error">@error</div>
+}
+
+@if (preview is not null)
+{
+    <div class="card task-section">
+        <h3>Preview (up to 40 rows)</h3>
+        <p class="muted">Detected headers: @string.Join(", ", preview.Headers)</p>
+        <table>
+            <thead><tr><th>Row</th><th>Issues</th><th>Sample</th></tr></thead>
+            <tbody>
+            @foreach (var row in preview.Rows.Take(40))
+            {
+                <tr>
+                    <td>@row.RowNumber</td>
+                    <td>@string.Join("; ", row.Errors)</td>
+                    <td>@string.Join(" | ", row.Cells.Take(4).Select(kv => $"{kv.Key}={kv.Value}"))</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (result is not null)
+{
+    <div class="alert ok">
+        <strong>Import finished.</strong> Batch #@result.ImportBatchId.
+        Total @result.TotalRows, valid @result.ValidRows, invalid @result.InvalidRows,
+        new @result.NewRows, updated @result.UpdatedRows, ignored dupes @result.IgnoredDuplicates.
+        <a href="/mail">Go to mail dashboard →</a>
+    </div>
+}
+
+@code {
+    private MailColumnMappingDto mapping = SpanishClientPreset();
+    private DuplicateImportMode duplicateMode = DuplicateImportMode.Ignore;
+    private string? campaignName;
+    private bool validOnly = true;
+    private byte[]? fileBytes;
+    private MailImportPreviewResultDto? preview;
+    private MailImportExecuteResultDto? result;
+    private string? error;
+    private bool loading;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        error = null;
+        preview = null;
+        result = null;
+        var file = e.File;
+        if (file is null) return;
+        await using var stream = file.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        fileBytes = ms.ToArray();
+    }
+
+    private async Task Preview()
+    {
+        if (fileBytes is null) return;
+        loading = true;
+        error = null;
+        try
+        {
+            await using var stream = new MemoryStream(fileBytes);
+            preview = await ImportService.PreviewAsync(stream);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task RunImport()
+    {
+        if (fileBytes is null) return;
+        loading = true;
+        error = null;
+        try
+        {
+            await using var stream = new MemoryStream(fileBytes);
+            result = await ImportService.ImportAsync(stream, mapping, duplicateMode, campaignName, "local-user", validOnly);
+            preview = null;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private static MailColumnMappingDto SpanishClientPreset() => new()
+    {
+        FirstName = "Nombre",
+        Company = "Empresa",
+        Email = "Email",
+        Country = "País",
+        Language = "Idioma",
+        CustomerType = "Tipo Cliente",
+        JobTitle = "Contacto"
+    };
+}

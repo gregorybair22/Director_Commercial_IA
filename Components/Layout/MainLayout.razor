@@ -1,0 +1,26 @@
+@inherits LayoutComponentBase
+
+<div class="shell">
+    <aside class="sidebar">
+        <h2>LFS</h2>
+        <ProjectSelector @rendermode="InteractiveServer" />
+        <a href="/">Dashboard</a>
+        <a href="/pipeline">Pipeline</a>
+        <a href="/mover-oportunidades">Mover oportunidades</a>
+        <a href="/historial-movimientos">Historial movimientos</a>
+        <a href="/oportunidades">Oportunidades</a>
+        <hr style="border-color:#475467;margin:16px 0;" />
+        <strong style="font-size:12px;color:#98a2b3;">MAIL</strong>
+        <a href="/mail">Mail Dashboard</a>
+        <a href="/mail/import">Importar contactos</a>
+        <a href="/mail/phase/1">Fase 1</a>
+        <a href="/mail/phase/2">Fase 2</a>
+        <a href="/mail/phase/3">Fase 3</a>
+        <a href="/mail/phase/4">Fase 4</a>
+        <a href="/mail/phase/5">Fase 5</a>
+        <a href="/mail/gmail">Gmail</a>
+    </aside>
+    <main class="content">
+        @Body
+    </main>
+</div>

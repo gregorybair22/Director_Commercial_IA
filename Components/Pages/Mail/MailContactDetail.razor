@@ -1,0 +1,149 @@
+@page "/mail/contacts/{Id:int}"
+@rendermode InteractiveServer
+@inject AppDbContext Db
+@inject IMailContactCommandService Commands
+@using DirectorComercialIA.Mail.Models
+@using Microsoft.EntityFrameworkCore
+
+@if (contact is null)
+{
+    <h1>Contact not found</h1>
+    <p><a href="/mail">Back to mail dashboard</a></p>
+}
+else
+{
+    <div class="task-head">
+        <div>
+            <h1>@contact.FirstName @contact.LastName</h1>
+            <p class="muted">@contact.Email</p>
+            <div class="actions">
+                <span class="mode-badge auto">Phase @contact.CurrentPhase</span>
+                <span class="mode-badge manual">@contact.CurrentStatus</span>
+                @if (contact.IsResponded) { <span class="mode-badge auto">Replied</span> }
+                @if (contact.IsBounced) { <span class="mode-badge manual">Bounced</span> }
+            </div>
+        </div>
+        <div class="task-actions">
+            <a class="button" href="/mail/phase/@contact.CurrentPhase">Open phase @contact.CurrentPhase</a>
+            <a class="button secondary" href="/mail">Dashboard</a>
+        </div>
+    </div>
+
+    <div class="pipeline-grid-2">
+        <div class="card task-section">
+            <h3>Profile</h3>
+            <div class="task-grid">
+                <div class="task-item"><span class="task-label">Company</span><span class="task-value">@contact.Company</span></div>
+                <div class="task-item"><span class="task-label">Country</span><span class="task-value">@contact.Country</span></div>
+                <div class="task-item"><span class="task-label">Language</span><span class="task-value">@contact.Language</span></div>
+                <div class="task-item"><span class="task-label">Type</span><span class="task-value">@contact.CustomerType</span></div>
+                <div class="task-item"><span class="task-label">Job</span><span class="task-value">@contact.JobTitle</span></div>
+                <div class="task-item field-group-wide"><span class="task-label">Notes</span><span class="task-value">@contact.Notes</span></div>
+            </div>
+        </div>
+        <div class="card task-section">
+            <h3>Delivery flags</h3>
+            <p>Replied: @(contact.IsResponded ? "Yes" : "No") · Bounced: @(contact.IsBounced ? $"Yes ({contact.BounceType})" : "No")</p>
+            <button class="secondary" @onclick="MarkReplied">Mark as replied</button>
+        </div>
+    </div>
+
+    <h3>Internal comments</h3>
+    <div class="card task-section">
+        <textarea @bind="newComment" rows="3" placeholder="Visible to your team only"></textarea>
+        <button @onclick="PostComment" disabled="@string.IsNullOrWhiteSpace(newComment)">Post comment</button>
+    </div>
+
+    @if (comments.Count > 0)
+    {
+        <ul class="mail-comment-list">
+            @foreach (var c in comments)
+            {
+                <li><span class="muted">@c.CreatedAt.ToString("u")</span> — @c.Comment</li>
+            }
+        </ul>
+    }
+
+    <h3>Send history</h3>
+    <table>
+        <thead><tr><th>When</th><th>Phase</th><th>Status</th><th>Subject</th></tr></thead>
+        <tbody>
+        @if (sends.Count == 0)
+        {
+            <tr><td colspan="4">No sends recorded.</td></tr>
+        }
+        else
+        {
+            @foreach (var s in sends)
+            {
+                <tr>
+                    <td>@s.SentAt.ToString("g")</td>
+                    <td>@s.PhaseNumber</td>
+                    <td>@s.SendStatus</td>
+                    <td>@s.Subject</td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+
+    <h3>Phase history</h3>
+    <table>
+        <thead><tr><th>When</th><th>From</th><th>To</th><th>Reason</th></tr></thead>
+        <tbody>
+        @if (history.Count == 0)
+        {
+            <tr><td colspan="4">No phase changes yet.</td></tr>
+        }
+        else
+        {
+            @foreach (var h in history)
+            {
+                <tr>
+                    <td>@h.CreatedAt.ToString("g")</td>
+                    <td>@h.FromPhase</td>
+                    <td>@h.ToPhase</td>
+                    <td>@h.Reason</td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private MailContact? contact;
+    private List<MailEmailSendLog> sends = new();
+    private List<MailContactPhaseHistory> history = new();
+    private List<MailContactComment> comments = new();
+    private string newComment = "";
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    protected override async Task OnParametersSetAsync() => await Load();
+
+    private async Task Load()
+    {
+        contact = await Db.MailContacts.FirstOrDefaultAsync(c => c.Id == Id);
+        if (contact is null) return;
+        sends = await Db.MailEmailSendLogs.AsNoTracking().Where(s => s.ContactId == Id).OrderByDescending(s => s.SentAt).ToListAsync();
+        history = await Db.MailContactPhaseHistories.AsNoTracking().Where(h => h.ContactId == Id).OrderByDescending(h => h.CreatedAt).ToListAsync();
+        comments = await Db.MailContactComments.AsNoTracking().Where(c => c.ContactId == Id).OrderByDescending(c => c.CreatedAt).ToListAsync();
+    }
+
+    private async Task MarkReplied()
+    {
+        await Commands.SetRespondedAsync(Id, true);
+        await Load();
+    }
+
+    private async Task PostComment()
+    {
+        if (string.IsNullOrWhiteSpace(newComment)) return;
+        await Commands.AddCommentAsync(Id, "local-user", newComment);
+        newComment = "";
+        await Load();
+    }
+}

@@ -1,0 +1,117 @@
+@page "/historial-movimientos"
+@rendermode InteractiveServer
+@inject DirectorComercialIA.Services.OpportunityMoveService MoveService
+@inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
+
+<h1>Historial de movimientos</h1>
+<p class="muted">Auditoría de movimientos entre proyectos y exportación CSV.</p>
+
+<div class="filters">
+    <input type="date" @bind="filter.FromDate" />
+    <input type="date" @bind="filter.ToDate" />
+    <input placeholder="Usuario" @bind="filter.MovedBy" @bind:event="oninput" />
+    <select @bind="filter.FromProjectGid">
+        <option value="">Proyecto origen</option>
+        @foreach (var p in ProjectSelection.Projects)
+        {
+            <option value="@p.Gid">@p.Name</option>
+        }
+    </select>
+    <select @bind="filter.ToProjectGid">
+        <option value="">Proyecto destino</option>
+        @foreach (var p in ProjectSelection.Projects)
+        {
+            <option value="@p.Gid">@p.Name</option>
+        }
+    </select>
+    <select @bind="successFilterText">
+        <option value="">Resultado</option>
+        <option value="ok">Correcto</option>
+        <option value="error">Con error</option>
+    </select>
+    <input placeholder="Buscar tarea/error" @bind="filter.SearchText" @bind:event="oninput" />
+    <button @onclick="LoadAsync">Buscar</button>
+    <button class="secondary" @onclick="PrepareCsvAsync" disabled="@(rows.Count == 0)">Exportar CSV</button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert ok">@message</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(csvDataUrl))
+{
+    <div class="card" style="margin-bottom:12px;">
+        <a class="button" href="@csvDataUrl" download="historial_movimientos.csv">Descargar historial_movimientos.csv</a>
+    </div>
+}
+
+@if (rows.Count == 0)
+{
+    <p class="muted">No hay datos para los filtros aplicados.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Usuario</th>
+                <th>Tarea</th>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th>Resultado</th>
+                <th>Error</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in rows)
+            {
+                <tr>
+                    <td>@row.MovedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@row.MovedBy</td>
+                    <td>@row.TaskName</td>
+                    <td>@row.FromProjectName</td>
+                    <td>@row.ToProjectName</td>
+                    <td>@(row.Success ? "OK" : "ERROR")</td>
+                    <td>@row.ErrorMessage</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private OpportunityMoveHistoryFilterVm filter = new();
+    private List<OpportunityMoveHistoryItemVm> rows = [];
+    private string successFilterText = string.Empty;
+    private string? csvDataUrl;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        csvDataUrl = null;
+        message = null;
+
+        filter.Success = successFilterText switch
+        {
+            "ok" => true,
+            "error" => false,
+            _ => null
+        };
+
+        rows = await MoveService.GetHistoryAsync(filter);
+    }
+
+    private async Task PrepareCsvAsync()
+    {
+        var csv = await MoveService.ExportHistoryCsvAsync(filter);
+        csvDataUrl = "data:text/csv;charset=utf-8," + Uri.EscapeDataString(csv);
+        message = "CSV preparado. Pulsa descargar.";
+    }
+}

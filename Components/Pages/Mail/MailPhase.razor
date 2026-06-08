@@ -1,0 +1,230 @@
+@page "/mail/phase/{Phase:int}"
+@rendermode InteractiveServer
+@inject IMailContactQueryService ContactQuery
+@inject IMailReplyCheckService ReplyCheck
+@inject IMailEmailDispatchService Dispatch
+@inject IMailGmailOAuthService GmailOAuth
+@inject AppDbContext Db
+@inject NavigationManager Nav
+@using Microsoft.EntityFrameworkCore
+
+<h1>Phase @Phase</h1>
+<p class="muted">Select recipients, compose your message, then send through your connected Gmail account.</p>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert ok">@message</div>
+}
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert error">@error</div>
+}
+
+@if (!gmailConnected)
+{
+    <div class="alert error">
+        <strong>Gmail is not connected.</strong> <a href="/mail/gmail">Open Gmail settings</a> and use Connect Gmail.
+    </div>
+}
+
+<div class="cards">
+    <div class="card"><strong>@metrics.TotalInPhase</strong><span>In phase</span></div>
+    <div class="card"><strong>@metrics.Replied</strong><span>Replied</span></div>
+    <div class="card"><strong>@metrics.NotReplied</strong><span>Not replied</span></div>
+    <div class="card warning"><strong>@metrics.Bounced</strong><span>Bounced</span></div>
+</div>
+
+<div class="actions">
+    @if (Phase >= 2)
+    {
+        <button class="secondary" @onclick="CheckReplies" disabled="@loading">Check replies</button>
+    }
+</div>
+
+<div class="card task-section">
+    <h3>Compose email</h3>
+    <div class="field-group field-group-wide">
+        <label>Subject line</label>
+        <input @bind="subject" placeholder="e.g. Follow-up – {{Company}}" />
+    </div>
+    <div class="field-group field-group-wide">
+        <label>Message body (HTML)</label>
+        <textarea @bind="body" rows="12" placeholder="Write your HTML email here…"></textarea>
+    </div>
+    <div class="mail-merge-fields">
+        <span class="muted">Merge fields:</span>
+        @foreach (var field in mergeFields)
+        {
+            <button type="button" class="secondary mail-merge-chip" @onclick="() => InsertField(field)">@field</button>
+        }
+    </div>
+    <div class="actions">
+        <button @onclick="SendSelected" disabled="@loading || !selectedIds.Any()">Send to selected (@selectedIds.Count)</button>
+    </div>
+</div>
+
+<div class="card task-section">
+    <h3>Recipients</h3>
+    <table>
+        <thead>
+            <tr>
+                <th><input type="checkbox" @onchange="ToggleAll" checked="@allSelected" /></th>
+                <th>Name</th><th>Company</th><th>Email</th><th>Country</th><th>Reply</th><th>Bounce</th><th>Sent</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (list.Items.Count == 0)
+        {
+            <tr><td colspan="9">No contacts in this phase. <a href="/mail/import">Import contacts</a>.</td></tr>
+        }
+        else
+        {
+            @foreach (var r in list.Items)
+            {
+                <tr class="@(r.IsResponded ? "row-replied" : "")">
+                    <td><input type="checkbox" checked="@selectedIds.Contains(r.Id)" @onchange="e => ToggleRow(r.Id, e)" /></td>
+                    <td>@r.FullName</td>
+                    <td>@r.Company</td>
+                    <td>@r.Email</td>
+                    <td>@r.Country</td>
+                    <td>@(r.IsResponded ? "Yes" : "No")</td>
+                    <td>@(r.IsBounced ? r.BounceType.ToString() : "—")</td>
+                    <td>@(r.PhaseEmailSent ? "Yes" : "No")</td>
+                    <td><a href="/mail/contacts/@r.Id">Detail</a></td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+    <p class="muted">Showing @list.Items.Count of @list.TotalCount — page @listPage</p>
+    <div class="actions">
+        @if (listPage > 1)
+        {
+            <button class="secondary" @onclick="() => ChangePage(listPage - 1)">Previous</button>
+        }
+        @if (list.Items.Count + (listPage - 1) * 50 < list.TotalCount)
+        {
+            <button class="secondary" @onclick="() => ChangePage(listPage + 1)">Next</button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Phase { get; set; } = 1;
+
+    private MailPagedResultDto<MailContactListItemDto> list = new();
+    private MailPhaseMetricsDto metrics = new();
+    private HashSet<int> selectedIds = new();
+    private bool allSelected;
+    private int listPage = 1;
+    private string subject = "";
+    private string body = "";
+    private bool gmailConnected;
+    private string? message;
+    private string? error;
+    private bool loading;
+
+    private static readonly string[] mergeFields =
+        ["{{FirstName}}", "{{LastName}}", "{{Company}}", "{{Country}}", "{{Language}}", "{{CustomerType}}"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Phase < 1 || Phase > 5) Phase = 1;
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Phase < 1 || Phase > 5) Phase = 1;
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var filter = new MailContactListFilterDto { Phase = Phase, Page = listPage, PageSize = 50 };
+        list = await ContactQuery.ListAsync(filter);
+        metrics = await ContactQuery.GetPhaseMetricsAsync(Phase);
+        var gmailStatus = await GmailOAuth.GetStatusAsync();
+        gmailConnected = gmailStatus.IsConnected;
+
+        var tpl = await Db.MailEmailTemplates.AsNoTracking()
+            .Where(t => t.PhaseNumber == Phase && t.IsDefault)
+            .OrderBy(t => t.Id)
+            .FirstOrDefaultAsync();
+        if (tpl != null && string.IsNullOrEmpty(subject))
+        {
+            subject = tpl.SubjectTemplate;
+            body = tpl.BodyTemplate;
+        }
+    }
+
+    private void ToggleAll(ChangeEventArgs e)
+    {
+        allSelected = (bool)(e.Value ?? false);
+        if (allSelected)
+            selectedIds = list.Items.Select(i => i.Id).ToHashSet();
+        else
+            selectedIds.Clear();
+    }
+
+    private void ToggleRow(int id, ChangeEventArgs e)
+    {
+        if ((bool)(e.Value ?? false))
+            selectedIds.Add(id);
+        else
+            selectedIds.Remove(id);
+        allSelected = list.Items.Count > 0 && list.Items.All(i => selectedIds.Contains(i.Id));
+    }
+
+    private void InsertField(string field) => body += field;
+
+    private async Task CheckReplies()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            var summary = await ReplyCheck.CheckRepliesForPhaseAsync(Phase);
+            message = $"Checked {summary.Checked}. Replies found: {summary.RepliesFound}. No reply: {summary.NoReply}. Errors: {summary.Errors}.";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task SendSelected()
+    {
+        if (!selectedIds.Any()) return;
+        loading = true;
+        error = null;
+        try
+        {
+            var result = await Dispatch.SendForPhaseAsync(Phase, selectedIds.ToList(), subject, body, "local-user");
+            message = $"Sent: {result.Sent}. Failed: {result.Failed}. " +
+                      (result.Errors.Count > 0 ? string.Join("; ", result.Errors.Take(5)) : "");
+            selectedIds.Clear();
+            allSelected = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task ChangePage(int page)
+    {
+        listPage = page;
+        await LoadData();
+    }
+}

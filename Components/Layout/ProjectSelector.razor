@@ -1,0 +1,40 @@
+@inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
+
+@inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
+
+<div class="sidebar-project">
+    <label for="sidebarProject">Proyecto Asana</label>
+    <select id="sidebarProject" @bind="selectedProjectGid" @bind:after="OnProjectChanged">
+        @foreach (var project in ProjectSelection.Projects)
+        {
+            <option value="@project.Gid">@project.Name</option>
+        }
+    </select>
+</div>
+@if (!string.IsNullOrWhiteSpace(projectMessage))
+{
+    <p class="sidebar-message">@projectMessage</p>
+}
+
+@code {
+    private string? projectMessage;
+    private string selectedProjectGid = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        selectedProjectGid = ProjectSelection.SelectedProjectGid;
+    }
+
+    private async Task OnProjectChanged()
+    {
+        if (string.IsNullOrWhiteSpace(selectedProjectGid) || selectedProjectGid == ProjectSelection.SelectedProjectGid)
+        {
+            return;
+        }
+
+        ProjectSelection.SetSelectedProject(selectedProjectGid, notify: true);
+        projectMessage = "Proyecto seleccionado. Pulsa 'Actualizar desde Asana' para sincronizar cambios.";
+
+        await Task.CompletedTask;
+    }
+}

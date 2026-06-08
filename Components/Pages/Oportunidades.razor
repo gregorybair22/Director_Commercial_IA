@@ -1,0 +1,87 @@
+@page "/oportunidades"
+@rendermode InteractiveServer
+@inject DirectorComercialIA.Services.CommercialTaskService TaskService
+@inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
+
+<h1>Oportunidades</h1>
+
+<div class="filters">
+    <input placeholder="Buscar" @bind="search" @bind:event="oninput" />
+    <select @bind="sectionFilter">
+        <option value="">Todas las secciones</option>
+        @foreach (var section in Sections)
+        {
+            <option value="@(section)">@(section)</option>
+        }
+    </select>
+    <select @bind="riskFilter">
+        <option value="">Todos los riesgos</option>
+        <option>Crítico</option>
+        <option>Alto</option>
+        <option>Medio</option>
+        <option>Bajo</option>
+    </select>
+</div>
+
+@if (tasks is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <p class="muted">Mostrando @FilteredTasks.Count() de @tasks.Count oportunidades.</p>
+    <table>
+        <thead><tr><th>Oportunidad</th><th>Sección</th><th>Responsable</th><th>Fecha</th><th>Días</th><th>Riesgo</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var task in FilteredTasks)
+        {
+            <tr>
+                <td>@task.Name</td>
+                <td>@task.SectionName</td>
+                <td>@(task.AssigneeName ?? "Sin responsable")</td>
+                <td>@(task.DueOn?.ToString("dd/MM/yyyy") ?? "Sin fecha")</td>
+                <td>@task.DaysWithoutActivity</td>
+                <td>@task.RiskLevel</td>
+                <td><a href="/tasks/@task.Id">Ver</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@implements IDisposable
+
+@code {
+    private List<CommercialTask>? tasks;
+    private string search = "";
+    private string sectionFilter = "";
+    private string riskFilter = "";
+
+    private IEnumerable<string> Sections => tasks?.Select(t => t.SectionName).Distinct().OrderBy(s => s) ?? Enumerable.Empty<string>();
+
+    private IEnumerable<CommercialTask> FilteredTasks => (tasks ?? new List<CommercialTask>())
+        .Where(t => string.IsNullOrWhiteSpace(search) || t.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
+        .Where(t => string.IsNullOrWhiteSpace(sectionFilter) || t.SectionName == sectionFilter)
+        .Where(t => string.IsNullOrWhiteSpace(riskFilter) || t.RiskLevel == riskFilter)
+        .OrderByDescending(t => t.DaysWithoutActivity);
+
+    protected override async Task OnInitializedAsync()
+    {
+        ProjectSelection.Changed += OnProjectChanged;
+        tasks = await TaskService.GetByProjectAsync(ProjectSelection.SelectedProjectGid, includeArchived: false);
+    }
+
+    private async void OnProjectChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            tasks = await TaskService.GetByProjectAsync(ProjectSelection.SelectedProjectGid, includeArchived: false);
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        ProjectSelection.Changed -= OnProjectChanged;
+    }
+}

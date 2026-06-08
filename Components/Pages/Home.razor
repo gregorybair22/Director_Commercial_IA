@@ -1,0 +1,236 @@
+@page "/"
+@rendermode InteractiveServer
+@inject DirectorComercialIA.Services.CommercialDashboardService DashboardService
+@inject DirectorComercialIA.Services.CommercialTaskService TaskService
+@inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
+@inject DirectorComercialIA.Services.SyncLogService SyncLog
+@inject NavigationManager Nav
+
+<h1>Dashboard</h1>
+
+<div class="actions">
+    <button @onclick="Sync" disabled="@loading">@(loading ? "Sincronizando..." : "Actualizar desde Asana")</button>
+    <button class="secondary" @onclick="ToggleNew">@(showNew ? "Cancelar" : "Nueva oportunidad")</button>
+    <button class="secondary" @onclick="ToggleLog">@(showLog ? "Ocultar Log" : "Ver Log")</button>
+</div>
+
+@if (showNew)
+{
+    <div class="card">
+        <h3>Nueva oportunidad local</h3>
+        <div class="filters">
+            <input placeholder="Nombre" @bind="newTask.Name" />
+            <input placeholder="País" @bind="newTask.Country" />
+            <select @bind="newTask.LocalStatus">@foreach (var s in LocalStatuses){<option>@s</option>}</select>
+            <select @bind="newTask.Priority">@foreach (var p in Priorities){<option>@p</option>}</select>
+            <select @bind="newTask.ClientType">@foreach (var c in ClientTypes){<option>@c</option>}</select>
+            <input placeholder="Próxima acción" @bind="newTask.NextAction" />
+            <input type="date" @bind="newTask.NextActionDate" />
+            <input type="number" placeholder="Valor estimado" @bind="newTask.EstimatedValue" />
+            <input type="number" placeholder="Probabilidad" @bind="newTask.Probability" />
+            <input placeholder="Responsable comercial" @bind="newTask.CommercialOwner" />
+            <textarea placeholder="Notas internas" @bind="newTask.InternalNotes"></textarea>
+        </div>
+        <button @onclick="CreateLocal">Guardar oportunidad</button>
+    </div>
+}
+
+<div class="filters">
+    <input placeholder="Buscar por nombre" @bind="searchText" @bind:event="oninput" />
+    <select @bind="localStatusFilter"><option value="">Estado local</option>@foreach (var s in LocalStatuses){<option>@s</option>}</select>
+    <select @bind="priorityFilter"><option value="">Prioridad</option>@foreach (var p in Priorities){<option>@p</option>}</select>
+    <input placeholder="Responsable" @bind="assigneeFilter" />
+    <input placeholder="País" @bind="countryFilter" />
+    <select @bind="clientTypeFilter"><option value="">Tipo cliente</option>@foreach (var c in ClientTypes){<option>@c</option>}</select>
+    <label><input type="checkbox" @bind="onlyOverdue" /> Solo vencidas</label>
+    <label><input type="checkbox" @bind="onlyNoDueDate" /> Solo sin fecha</label>
+    <label><input type="checkbox" @bind="onlyNoActivity60" /> Solo inactividad > 60</label>
+    <label><input type="checkbox" @bind="showArchived" /> Mostrar archivadas</label>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert error">@error</div>
+}
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert ok">@message</div>
+}
+
+@if (tasks is not null)
+{
+    <section class="cards">
+        <div class="card"><strong>@tasks.Count(t => !t.IsCompleted && !t.IsArchivedLocally)</strong><span>Oportunidades activas</span></div>
+        <div class="card danger"><strong>@tasks.Count(t => t.IsOverdue && !t.IsArchivedLocally)</strong><span>Vencidas</span></div>
+        <div class="card warning"><strong>@tasks.Count(t => t.HasNoDueDate && !t.IsArchivedLocally)</strong><span>Sin fecha</span></div>
+        <div class="card warning"><strong>@tasks.Count(t => t.HasNoAssignee && !t.IsArchivedLocally)</strong><span>Sin responsable</span></div>
+        <div class="card"><strong>@tasks.Count(t => t.DaysWithoutActivity > 60 && !t.IsArchivedLocally)</strong><span>Sin actividad > 60 días</span></div>
+    </section>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th><th>Sección</th><th>Responsable</th><th>Estado local</th><th>Prioridad</th><th>País</th><th>Tipo cliente</th>
+                <th>Próxima acción</th><th>Fecha próxima acción</th><th>Valor estimado</th><th>Probabilidad</th><th>Días sin actividad</th><th>Riesgo</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var task in FilteredTasks)
+        {
+            var priorityClass = task.Priority switch { "Crítica" => "danger", "Alta" => "warning", _ => "" };
+            var riskClass = task.RiskLevel switch { "Crítico" => "danger", "Alto" => "warning", _ => "" };
+            <tr>
+                <td>@task.Name</td>
+                <td>@task.SectionName</td>
+                <td>@(task.AssigneeName ?? "-")</td>
+                <td>@task.LocalStatus</td>
+                <td><span class="@priorityClass">@task.Priority</span></td>
+                <td>@task.Country</td>
+                <td>@task.ClientType</td>
+                <td>@task.NextAction</td>
+                <td>@task.NextActionDate?.ToString("dd/MM/yyyy")</td>
+                <td>@task.EstimatedValue</td>
+                <td>@(task.Probability.HasValue ? $"{task.Probability}%" : "")</td>
+                <td>@task.DaysWithoutActivity</td>
+                <td><span class="@riskClass">@task.RiskLevel</span></td>
+                <td>
+                    <a href="/tasks/@task.Id">Ver</a>
+                    <a href="/tasks/@task.Id" style="margin-left:8px;">Editar</a>
+                    <a href="#" style="margin-left:8px;" @onclick="() => Archive(task.Id)" @onclick:preventDefault="true">Archivar</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@if (showLog)
+{
+    <div class="log-panel" style="background:#1e1e1e; color:#d4d4d4; padding:1rem; margin:1rem 0; border-radius:4px; max-height:300px; overflow-y:auto; font-family:monospace; font-size:0.85rem;">
+        @foreach (var entry in SyncLog.Entries)
+        {
+            <div>[ @entry.Timestamp.ToString("HH:mm:ss") ] @entry.Message</div>
+        }
+    </div>
+}
+
+@implements IDisposable
+
+@code {
+    private List<CommercialTask> tasks = [];
+    private bool loading;
+    private bool showNew;
+    private bool showLog;
+    private bool showArchived;
+    private bool onlyOverdue;
+    private bool onlyNoDueDate;
+    private bool onlyNoActivity60;
+    private string? message;
+    private string? error;
+
+    private string searchText = "";
+    private string localStatusFilter = "";
+    private string priorityFilter = "";
+    private string assigneeFilter = "";
+    private string countryFilter = "";
+    private string clientTypeFilter = "";
+
+    private CommercialTask newTask = new();
+
+    private static readonly string[] LocalStatuses = ["Nuevo", "Contactado", "Seguimiento", "Oferta enviada", "Negociación", "Pendiente aceptación", "Ganado", "Perdido", "Dormido"];
+    private static readonly string[] Priorities = ["Baja", "Media", "Alta", "Crítica"];
+    private static readonly string[] ClientTypes = ["Hospital público", "Hospital privado", "Lavandería", "Distribuidor", "Industria", "Otro"];
+
+    private IEnumerable<CommercialTask> FilteredTasks => tasks
+        .Where(t => showArchived || !t.IsArchivedLocally)
+        .Where(t => string.IsNullOrWhiteSpace(searchText) || t.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        .Where(t => string.IsNullOrWhiteSpace(localStatusFilter) || t.LocalStatus == localStatusFilter)
+        .Where(t => string.IsNullOrWhiteSpace(priorityFilter) || t.Priority == priorityFilter)
+        .Where(t => string.IsNullOrWhiteSpace(assigneeFilter) || (t.AssigneeName ?? "").Contains(assigneeFilter, StringComparison.OrdinalIgnoreCase))
+        .Where(t => string.IsNullOrWhiteSpace(countryFilter) || (t.Country ?? "").Contains(countryFilter, StringComparison.OrdinalIgnoreCase))
+        .Where(t => string.IsNullOrWhiteSpace(clientTypeFilter) || t.ClientType == clientTypeFilter)
+        .Where(t => !onlyOverdue || t.IsOverdue)
+        .Where(t => !onlyNoDueDate || t.HasNoDueDate)
+        .Where(t => !onlyNoActivity60 || t.DaysWithoutActivity > 60)
+        .OrderByDescending(t => t.DaysWithoutActivity);
+
+    protected override async Task OnInitializedAsync()
+    {
+        ProjectSelection.Changed += OnProjectChanged;
+        await LoadData();
+        InitNewTask();
+    }
+
+    private async Task LoadData()
+    {
+        tasks = await TaskService.GetByProjectAsync(ProjectSelection.SelectedProjectGid, includeArchived: true);
+    }
+
+    private async Task Sync()
+    {
+        loading = true;
+        error = null;
+        message = null;
+        SyncLog.Clear();
+
+        try
+        {
+            var count = await DashboardService.SyncFromAsanaAsync(ProjectSelection.SelectedProjectGid);
+            await LoadData();
+            message = $"Sincronización completada. {count} tareas actualizadas.";
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task CreateLocal()
+    {
+        newTask.ProjectGid = ProjectSelection.SelectedProjectGid;
+        newTask.ProjectName = ProjectSelection.GetSelectedProjectName();
+        newTask.SectionName = "Manual";
+        await TaskService.CreateLocalAsync(newTask);
+        message = "Oportunidad local creada.";
+        showNew = false;
+        InitNewTask();
+        await LoadData();
+    }
+
+    private async Task Archive(int id)
+    {
+        await TaskService.ArchiveAsync(id);
+        await LoadData();
+    }
+
+    private void InitNewTask()
+    {
+        newTask = new CommercialTask
+        {
+            LocalStatus = "Nuevo",
+            Priority = "Media",
+            ClientType = "Otro"
+        };
+    }
+
+    private void ToggleNew() => showNew = !showNew;
+    private void ToggleLog() => showLog = !showLog;
+
+    private async void OnProjectChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadData();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        ProjectSelection.Changed -= OnProjectChanged;
+    }
+}

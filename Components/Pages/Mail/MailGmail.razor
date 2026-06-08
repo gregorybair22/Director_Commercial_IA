@@ -1,0 +1,62 @@
+@page "/mail/gmail"
+@rendermode InteractiveServer
+@inject IMailGmailOAuthService GmailOAuth
+@inject NavigationManager Nav
+
+<h1>Gmail connection</h1>
+<p class="muted">Connect a Google account with Gmail API access so the app can send mail and read replies.</p>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert ok">@message</div>
+}
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert error">@error</div>
+}
+
+<div class="card task-section">
+    <h3>Setup checklist</h3>
+    <p>In Google Cloud Console: enable <strong>Gmail API</strong>, create a <strong>Web application</strong> OAuth 2.0 client, and add this redirect URI exactly:</p>
+    <pre class="mail-code-block">@callbackUrl</pre>
+    <p class="muted">Put <code>ClientId</code> and <code>ClientSecret</code> in <code>appsettings.json</code> under <code>Gmail</code>.</p>
+</div>
+
+<div class="card task-section">
+    <h3>Connection status</h3>
+    @if (status?.IsConnected == true)
+    {
+        <div class="alert ok">Connected as <strong>@status.Email</strong></div>
+        <form method="post" action="/mail/gmail-disconnect" onsubmit="return confirm('Disconnect Gmail?');">
+            <button type="submit" class="secondary">Disconnect Gmail</button>
+        </form>
+    }
+    else
+    {
+        <p class="muted">No active connection. You will be redirected to Google to approve access.</p>
+        <form method="post" action="/mail/gmail-connect">
+            <button type="submit">Connect Gmail</button>
+        </form>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Ok { get; set; }
+    [SupplyParameterFromQuery] public string? Error { get; set; }
+
+    private MailGmailStatusDto? status;
+    private string callbackUrl = "";
+    private string? message;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        callbackUrl = $"{Nav.BaseUri.TrimEnd('/')}/mail/gmail-callback";
+        status = await GmailOAuth.GetStatusAsync();
+
+        if (Ok == "1")
+            message = "Gmail connected.";
+        if (!string.IsNullOrEmpty(Error))
+            error = Error;
+    }
+}
