@@ -1,0 +1,15 @@
+<div class="card @CssClass">
+    <span>@Title</span>
+    <strong>@Value</strong>
+    @if (!string.IsNullOrWhiteSpace(SubTitle))
+    {
+        <small class="muted">@SubTitle</small>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string? SubTitle { get; set; }
+    [Parameter] public string CssClass { get; set; } = "";
+}

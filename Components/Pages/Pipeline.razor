@@ -1,0 +1,314 @@
+@page "/pipeline"
+@rendermode InteractiveServer
+@inject DirectorComercialIA.Services.PipelineAnalyticsService PipelineService
+@inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
+@using System.Globalization
+
+@if (loading)
+{
+    <p>Cargando...</p>
+}
+else if (data is null)
+{
+    <p class="muted">No hay datos.</p>
+}
+else
+{
+    <div class="pipeline-master-detail">
+        <section class="pipeline-master-pane">
+            <h1>Pipeline comercial</h1>
+            <p class="muted">Vista ejecutiva del flujo comercial en menos de 10 segundos.</p>
+
+            <div class="filters">
+                <select @bind="filter.ProjectGid" @bind:after="OnProjectChanged">
+                    @foreach (var project in ProjectSelection.Projects)
+                    {
+                        <option value="@project.Gid">@project.Name</option>
+                    }
+                </select>
+                <input placeholder="Responsable" @bind="filter.Responsible" @bind:event="oninput" />
+                <input placeholder="País" @bind="filter.Country" @bind:event="oninput" />
+                <select @bind="filter.ClientType">
+                    <option value="">Tipo cliente</option>
+                    @foreach (var item in ClientTypes)
+                    {
+                        <option>@item</option>
+                    }
+                </select>
+                <select @bind="filter.Status">
+                    <option value="">Estado</option>
+                    @foreach (var item in Statuses)
+                    {
+                        <option>@item</option>
+                    }
+                </select>
+                <input type="date" @bind="filter.DateFrom" />
+                <input type="date" @bind="filter.DateTo" />
+                <button @onclick="LoadAsync">Aplicar filtros</button>
+            </div>
+
+            <section class="cards">
+                <KpiCard Title="Total oportunidades" Value="@($"{data.Kpis.TotalOpportunities}")" />
+                <KpiCard Title="Valor total pipeline" Value="@FormatCurrency(data.Kpis.TotalValue)" />
+                <KpiCard Title="Valor ponderado" Value="@FormatCurrency(data.Kpis.WeightedValue)" />
+                <KpiCard Title="Ganadas este mes" Value="@($"{data.Kpis.WonThisMonth}")" CssClass="ok" />
+                <KpiCard Title="Perdidas este mes" Value="@($"{data.Kpis.LostThisMonth}")" CssClass="danger" />
+                <KpiCard Title="Tasa conversión" Value="@($"{data.Kpis.ConversionRate:N2}%")" />
+                <KpiCard Title="Tiempo medio pipeline" Value="@($"{data.Kpis.AvgDaysInPipeline:N1} días")" />
+                <KpiCard Title="Tiempo medio hasta ganar" Value="@($"{data.Kpis.AvgDaysToWin:N1} días")" />
+            </section>
+
+            <h2>Kanban estadístico por estado</h2>
+            <div class="pipeline-kanban">
+                @foreach (var stage in data.StageStats)
+                {
+                    <div class="pipeline-column clickable" @onclick="() => ShowStageOpportunities(stage.Stage)">
+                        <h3>@stage.Stage</h3>
+                        <p><strong>@stage.Count</strong> oportunidades</p>
+                        <p>@FormatCurrency(stage.TotalValue)</p>
+                        <p class="muted">Ponderado: @FormatCurrency(stage.WeightedValue)</p>
+                        <p class="muted">@stage.Percentage % del total</p>
+                    </div>
+                }
+            </div>
+
+            <h2>Kanban estadístico por sección</h2>
+            <div class="pipeline-kanban">
+                @foreach (var sec in data.SectionStats)
+                {
+                    <div class="pipeline-column clickable" @onclick="() => ShowSectionOpportunities(sec.Stage)">
+                        <h3>@sec.Stage</h3>
+                        <p><strong>@sec.Count</strong> oportunidades</p>
+                        <p>@FormatCurrency(sec.TotalValue)</p>
+                        <p class="muted">Ponderado: @FormatCurrency(sec.WeightedValue)</p>
+                        <p class="muted">@sec.Percentage % del total</p>
+                    </div>
+                }
+            </div>
+
+            <h2>Embudo comercial</h2>
+            <div class="pipeline-grid-2">
+                <div class="funnel-wrap">
+                    <h3 style="margin-top:0; margin-bottom:10px;">Por estado</h3>
+                    @foreach (var step in data.Funnel)
+                    {
+                        <div class="funnel-row">
+                            <div class="funnel-label">@step.Stage (@step.Count)</div>
+                            <div class="funnel-bar" style="width:@ToCssPercent(Math.Max(step.WidthPercent, 4m))"></div>
+                            <div class="funnel-conv">@($"{step.ConversionFromPreviousPercent.GetValueOrDefault():N0}% del total")</div>
+                        </div>
+                    }
+                </div>
+                <div class="funnel-wrap">
+                    <h3 style="margin-top:0; margin-bottom:10px;">Por sección</h3>
+                    @foreach (var step in data.SectionFunnel)
+                    {
+                        <div class="funnel-row">
+                            <div class="funnel-label">@step.Stage (@step.Count)</div>
+                            <div class="funnel-bar" style="width:@ToCssPercent(Math.Max(step.WidthPercent, 4m))"></div>
+                            <div class="funnel-conv">@($"{step.ConversionFromPreviousPercent.GetValueOrDefault():N0}% del total")</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="pipeline-grid-2">
+                <div>
+                    <h2>Cuellos de botella</h2>
+                    @foreach (var b in data.Bottlenecks)
+                    {
+                        <div class="metric-row">
+                            <span>@b.Stage</span>
+                            <div class="metric-bar-container">
+                                <div class="metric-bar @(b.AvgDays > 60 ? "danger" : "")" style="width:@Math.Min(b.AvgDays, 100)%"></div>
+                            </div>
+                            <span>@b.AvgDays días</span>
+                        </div>
+                    }
+                </div>
+
+                <div>
+                    <h2>Por responsable</h2>
+                    @foreach (var r in data.ByResponsible)
+                    {
+                        <div class="metric-row">
+                            <span>@r.Responsible</span>
+                            <div class="metric-bar-container">
+                                <div class="metric-bar" style="width:@GetBarWidth(r.TotalValue, data.ByResponsible.Select(x => x.TotalValue))"></div>
+                            </div>
+                            <span>@r.Count | @FormatCurrency(r.TotalValue)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <h2>Por país</h2>
+            <div class="pipeline-grid-2">
+                @foreach (var c in data.ByCountry)
+                {
+                    <div class="card clickable" @onclick="() => ShowCountryOpportunities(c.Country)">
+                        <h3>@c.Country</h3>
+                        <p><strong>@c.Count</strong> oportunidades</p>
+                        <p>@FormatCurrency(c.TotalValue)</p>
+                    </div>
+                }
+            </div>
+
+            <h2>Oportunidades críticas</h2>
+            <div class="critical-panel">
+                @foreach (var c in data.Critical)
+                {
+                    <div class="critical-item">
+                        <div>
+                            <strong>@c.Name</strong>
+                            <div class="muted">@c.Status · @c.Responsible · @c.DaysWithoutActivity días sin actividad</div>
+                            <div>@FormatCurrency(c.EstimatedValue ?? 0)</div>
+                        </div>
+                        <a href="/tasks/@c.Id" class="button secondary">Abrir</a>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <div class="pipeline-layout-divider" aria-hidden="true"></div>
+
+        <section class="pipeline-detail-pane">
+            <div class="pipeline-detail-pane-header">
+                <h2>Detalle</h2>
+                @if (selectedOpportunities.Count > 0)
+                {
+                    <button class="secondary" @onclick="ClearSummarySelection">Limpiar selección</button>
+                }
+            </div>
+
+            @if (selectedOpportunities.Count == 0)
+            {
+                <p class="muted">Selecciona una tarjeta para ver el detalle.</p>
+            }
+            else
+            {
+                <p><strong>@selectedSummaryTitle</strong></p>
+                <div class="pipeline-detail-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th><th>Sección</th><th>Estado</th><th>Responsable</th><th>Días sin actividad</th><th>Riesgo</th><th>Valor</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in selectedOpportunities)
+                            {
+                                <tr>
+                                    <td>@item.Name</td>
+                                    <td>@item.Section</td>
+                                    <td>@item.Status</td>
+                                    <td>@item.Responsible</td>
+                                    <td>@item.DaysWithoutActivity</td>
+                                    <td>@item.RiskLevel</td>
+                                    <td>@FormatCurrency(item.EstimatedValue ?? 0)</td>
+                                    <td><a href="/tasks/@item.Id">Abrir</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private bool loading;
+    private PipelineDashboardVm? data;
+    private PipelineFilter filter = new();
+    private string selectedSummaryTitle = "";
+    private List<PipelineOpportunityVm> selectedOpportunities = [];
+
+    private static readonly string[] Statuses =
+    [
+        "Nuevo", "Contactado", "Seguimiento", "Oferta enviada", "Negociación",
+        "Pendiente aceptación", "Ganado", "Perdido", "Dormido"
+    ];
+
+    private static readonly string[] ClientTypes =
+    [
+        "Hospital público", "Hospital privado", "Lavandería", "Distribuidor", "Industria", "Otro"
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        filter.ProjectGid = ProjectSelection.SelectedProjectGid;
+        await LoadAsync();
+    }
+
+    private async Task OnProjectChanged()
+    {
+        ProjectSelection.SetSelectedProject(filter.ProjectGid, notify: false);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        data = await PipelineService.GetDashboardAsync(filter);
+        ClearSummarySelection();
+        loading = false;
+    }
+
+    private void ShowStageOpportunities(string stage)
+    {
+        if (data is null) return;
+
+        selectedSummaryTitle = $"Oportunidades del estado: {stage}";
+        selectedOpportunities = data.Opportunities
+            .Where(o => o.Status == stage)
+            .OrderByDescending(o => o.DaysWithoutActivity)
+            .ThenByDescending(o => o.EstimatedValue ?? 0)
+            .ToList();
+    }
+
+    private void ShowCountryOpportunities(string country)
+    {
+        if (data is null) return;
+
+        selectedSummaryTitle = $"Oportunidades del país: {country}";
+        selectedOpportunities = data.Opportunities
+            .Where(o => string.Equals((o.Country ?? string.Empty).Trim(), (country ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(o => o.DaysWithoutActivity)
+            .ThenByDescending(o => o.EstimatedValue ?? 0)
+            .ToList();
+    }
+
+    private void ShowSectionOpportunities(string section)
+    {
+        if (data is null) return;
+
+        selectedSummaryTitle = $"Oportunidades de la sección: {section}";
+        selectedOpportunities = data.Opportunities
+            .Where(o => o.Section == section)
+            .OrderByDescending(o => o.DaysWithoutActivity)
+            .ThenByDescending(o => o.EstimatedValue ?? 0)
+            .ToList();
+    }
+
+    private void ClearSummarySelection()
+    {
+        selectedSummaryTitle = "";
+        selectedOpportunities = [];
+    }
+
+    private static string FormatCurrency(decimal value) => $"{value:N0} €";
+
+    private static string GetBarWidth(decimal value, IEnumerable<decimal> all)
+    {
+        var max = all.DefaultIfEmpty(0).Max();
+        if (max <= 0) return "0%";
+        return $"{Math.Max((value / max) * 100m, 4m):N0}%";
+    }
+
+    private static string ToCssPercent(decimal percent)
+    {
+        var safe = Math.Min(100m, Math.Max(0m, percent));
+        return $"{safe.ToString("0.##", CultureInfo.InvariantCulture)}%";
+    }
+}

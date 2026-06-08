@@ -1,0 +1,273 @@
+@page "/mover-oportunidades"
+@rendermode InteractiveServer
+@inject DirectorComercialIA.Services.OpportunityMoveService MoveService
+@inject DirectorComercialIA.Services.ProjectSelectionService ProjectSelection
+
+<h1>Mover oportunidades</h1>
+<p class="muted">Filtra, selecciona, previsualiza y mueve oportunidades entre proyectos.</p>
+
+<div class="filters">
+    <select @bind="filter.ProjectGid">
+        <option value="">Proyecto actual</option>
+        @foreach (var p in ProjectSelection.Projects)
+        {
+            <option value="@p.Gid">@p.Name</option>
+        }
+    </select>
+    <select @bind="filter.Country">
+        <option value="">País</option>
+        @foreach (var c in countryOptions)
+        {
+            <option value="@c">@c</option>
+        }
+    </select>
+    <input placeholder="Idioma" @bind="filter.Language" @bind:event="oninput" />
+    <select @bind="filter.Status">
+        <option value="">Estado</option>
+        @foreach (var s in Statuses)
+        {
+            <option>@s</option>
+        }
+    </select>
+    <input type="date" @bind="filter.DateFrom" />
+    <input type="date" @bind="filter.DateTo" />
+    <input placeholder="Comercial" @bind="filter.Commercial" @bind:event="oninput" />
+    <input placeholder="Texto libre" @bind="filter.SearchText" @bind:event="oninput" />
+    <button @onclick="SearchAsync">Buscar</button>
+</div>
+
+<div class="card" style="margin-bottom:14px;">
+    <div class="filters">
+        <input placeholder="Usuario" @bind="movedBy" />
+        <select @bind="destinationProjectGid" @bind:after="OnDestinationProjectChanged">
+            <option value="">Proyecto destino</option>
+            @foreach (var p in ProjectSelection.Projects)
+            {
+                <option value="@p.Gid">@p.Name</option>
+            }
+        </select>
+        <select @bind="destinationSectionGid" disabled="@(destinationSections.Count == 0)">
+            <option value="">Sección destino</option>
+            @foreach (var s in destinationSections)
+            {
+                <option value="@s.Gid">@s.Name</option>
+            }
+        </select>
+        <button @onclick="BuildPreviewAsync" disabled="@(selectedIds.Count == 0 || string.IsNullOrWhiteSpace(destinationProjectGid) || string.IsNullOrWhiteSpace(destinationSectionGid))">Previsualizar</button>
+        <button class="secondary" @onclick="ConfirmMoveAsync" disabled="@(preview is null || preview.ReadyToMove == 0)">Confirmar movimiento</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert error">@error</div>
+}
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert ok">@message</div>
+}
+
+@if (preview is not null)
+{
+    <div class="card" style="margin-bottom:14px;">
+        <h3>Previsualización</h3>
+        <p>Total seleccionadas: <strong>@preview.TotalSelected</strong></p>
+        <p>Ya en destino: <strong>@preview.AlreadyInDestination</strong></p>
+        <p>Listas para mover: <strong>@preview.ReadyToMove</strong></p>
+        <p>Destino: <strong>@preview.DestinationProjectName</strong></p>
+        <p>Sección destino: <strong>@preview.DestinationSectionName</strong></p>
+    </div>
+}
+
+@if (results.Count == 0)
+{
+    <p class="muted">Sin resultados. Usa filtros y pulsa Buscar.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th><input type="checkbox" checked="@AreAllVisibleSelected" @onchange="ToggleSelectAll" /></th>
+                <th>Oportunidad</th>
+                <th>Proyecto actual</th>
+                <th>Estado</th>
+                <th>País</th>
+                <th>Idioma</th>
+                <th>Comercial</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in results)
+            {
+                <tr>
+                    <td><input type="checkbox" checked="@selectedIds.Contains(row.Id)" @onchange="(_) => ToggleSelection(row.Id)" /></td>
+                    <td>@row.Name</td>
+                    <td>@row.ProjectName</td>
+                    <td>@row.Status</td>
+                    <td>@row.Country</td>
+                    <td>@row.Language</td>
+                    <td>@row.CommercialOwner</td>
+                    <td>@row.ModifiedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (execution is not null)
+{
+    <div class="card" style="margin-top:16px;">
+        <h3>Resultado del movimiento</h3>
+        <p>Procesadas: <strong>@execution.Total</strong> | Correctas: <strong>@execution.SuccessCount</strong> | Errores: <strong>@execution.FailedCount</strong></p>
+
+        @if (execution.Results.Any(r => !r.Success))
+        {
+            <h4 style="margin-bottom:8px;">Errores</h4>
+            <ul>
+                @foreach (var err in execution.Results.Where(r => !r.Success))
+                {
+                    <li><strong>@err.TaskName:</strong> @err.Message</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    private OpportunityMoveFilter filter = new();
+    private List<OpportunityMoveItemVm> results = [];
+    private HashSet<int> selectedIds = [];
+    private MovePreviewVm? preview;
+    private MoveExecutionVm? execution;
+    private string destinationProjectGid = string.Empty;
+    private string destinationSectionGid = string.Empty;
+    private List<DirectorComercialIA.Services.AsanaSectionOption> destinationSections = [];
+    private string movedBy = Environment.UserName;
+    private string? message;
+    private string? error;
+    private List<string> countryOptions = [];
+
+    private static readonly string[] Statuses =
+    [
+        "Nuevo", "Contactado", "Seguimiento", "Oferta enviada", "Negociación", "Pendiente aceptación", "Ganado", "Perdido", "Dormido"
+    ];
+
+    private bool AreAllVisibleSelected => results.Count > 0 && results.All(r => selectedIds.Contains(r.Id));
+
+    protected override async Task OnInitializedAsync()
+    {
+        filter.ProjectGid = ProjectSelection.SelectedProjectGid;
+        destinationProjectGid = ProjectSelection.Projects.FirstOrDefault(p => p.Gid != filter.ProjectGid)?.Gid ?? string.Empty;
+        await LoadDestinationSectionsAsync();
+        await LoadCountryOptionsAsync();
+        await SearchAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        error = null;
+        message = null;
+        preview = null;
+        execution = null;
+
+        await LoadCountryOptionsAsync();
+        results = await MoveService.SearchAsync(filter);
+        selectedIds = results.Select(r => r.Id).ToHashSet();
+    }
+
+    private async Task LoadCountryOptionsAsync()
+    {
+        countryOptions = await MoveService.GetCountriesByProjectAsync(filter.ProjectGid);
+        if (!string.IsNullOrWhiteSpace(filter.Country) && !countryOptions.Contains(filter.Country))
+            filter.Country = string.Empty;
+    }
+
+    private async Task OnDestinationProjectChanged()
+    {
+        preview = null;
+        execution = null;
+        await LoadDestinationSectionsAsync();
+    }
+
+    private async Task LoadDestinationSectionsAsync()
+    {
+        destinationSections = string.IsNullOrWhiteSpace(destinationProjectGid)
+            ? []
+            : await MoveService.GetSectionsByProjectAsync(destinationProjectGid);
+
+        if (destinationSections.Count == 0)
+        {
+            destinationSectionGid = string.Empty;
+            return;
+        }
+
+        if (!destinationSections.Any(s => s.Gid == destinationSectionGid))
+        {
+            destinationSectionGid = destinationSections[0].Gid;
+        }
+    }
+
+    private void ToggleSelection(int id)
+    {
+        if (selectedIds.Contains(id))
+            selectedIds.Remove(id);
+        else
+            selectedIds.Add(id);
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs _)
+    {
+        if (AreAllVisibleSelected)
+        {
+            foreach (var id in results.Select(r => r.Id))
+                selectedIds.Remove(id);
+        }
+        else
+        {
+            foreach (var id in results.Select(r => r.Id))
+                selectedIds.Add(id);
+        }
+    }
+
+    private async Task BuildPreviewAsync()
+    {
+        error = null;
+        message = null;
+
+        if (selectedIds.Count == 0)
+        {
+            error = "Selecciona al menos una oportunidad.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(destinationSectionGid))
+        {
+            error = "Selecciona una sección destino.";
+            return;
+        }
+
+        var destName = ProjectSelection.Projects.FirstOrDefault(p => p.Gid == destinationProjectGid).Name ?? destinationProjectGid;
+        var destSectionName = destinationSections.FirstOrDefault(s => s.Gid == destinationSectionGid)?.Name ?? destinationSectionGid;
+        preview = await MoveService.BuildPreviewAsync(selectedIds, destinationProjectGid, destName, destinationSectionGid, destSectionName);
+    }
+
+    private async Task ConfirmMoveAsync()
+    {
+        error = null;
+        message = null;
+
+        if (preview is null)
+        {
+            error = "Primero genera una previsualización.";
+            return;
+        }
+
+        execution = await MoveService.MoveAsync(selectedIds, destinationProjectGid, preview.DestinationProjectName, preview.DestinationSectionGid, preview.DestinationSectionName, movedBy);
+        message = $"Movimiento completado. Correctas: {execution.SuccessCount}, Errores: {execution.FailedCount}";
+
+        await SearchAsync();
+        preview = null;
+    }
+}

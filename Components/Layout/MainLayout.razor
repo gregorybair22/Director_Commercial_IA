@@ -1,0 +1,16 @@
+@inherits LayoutComponentBase
+
+<div class="shell">
+    <aside class="sidebar">
+        <h2>LFS</h2>
+        <ProjectSelector @rendermode="InteractiveServer" />
+        <a href="/">Dashboard</a>
+        <a href="/pipeline">Pipeline</a>
+        <a href="/mover-oportunidades">Mover oportunidades</a>
+        <a href="/historial-movimientos">Historial movimientos</a>
+        <a href="/oportunidades">Oportunidades</a>
+    </aside>
+    <main class="content">
+        @Body
+    </main>
+</div>

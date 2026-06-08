@@ -1,0 +1,461 @@
+@page "/tasks/{id:int}"
+@rendermode InteractiveServer
+@inject DirectorComercialIA.Services.CommercialTaskService TaskService
+@inject NavigationManager Nav
+
+@if (task is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="task-page">
+        <div class="task-head">
+            <div>
+                <h1>Detalle de oportunidad</h1>
+                <p class="muted">Gestión comercial y trazabilidad de sincronización</p>
+            </div>
+            <div class="task-actions">
+                <button @onclick="Save">Guardar</button>
+                <button class="secondary" @onclick="RecalculateAuto">Recalcular campos automáticos</button>
+                <button class="secondary" @onclick="ConvertAllToManual">Convertir todo a manual</button>
+                <button class="secondary" @onclick="Back">Volver</button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="alert ok">@message</div>
+        }
+
+        <section class="card task-section">
+            <h3>Información principal</h3>
+            <div class="task-grid">
+                <div class="task-item"><span class="task-label">Nombre</span><span class="task-value">@task.Name</span></div>
+                <div class="task-item"><span class="task-label">Proyecto</span><span class="task-value">@task.ProjectName (@task.ProjectGid)</span></div>
+                <div class="task-item"><span class="task-label">Sección</span><span class="task-value">@task.SectionName</span></div>
+                <div class="task-item"><span class="task-label">Responsable</span><span class="task-value">@(task.AssigneeName ?? "-")</span></div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(task.PermalinkUrl))
+            {
+                <div style="margin-top:10px;"><a href="@task.PermalinkUrl" target="_blank">Abrir en Asana</a></div>
+            }
+        </section>
+
+        <section class="card task-section">
+            <h3>Gestión comercial local</h3>
+            <div class="task-form-grid">
+                <div class="field-group">
+                    <label>Estado local</label>
+                    <select @bind="task.LocalStatus">@foreach (var s in LocalStatuses){<option>@s</option>}</select>
+                    <span class="mode-badge @ModeClass(task.IsLocalStatusManual)">@ManualLabel(task.IsLocalStatusManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Prioridad</label>
+                    <select @bind="task.Priority">@foreach (var p in Priorities){<option>@p</option>}</select>
+                    <span class="mode-badge @ModeClass(task.IsPriorityManual)">@ManualLabel(task.IsPriorityManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Valor estimado (€)</label>
+                    <input type="number" @bind="task.EstimatedValue" />
+                    <span class="mode-badge @ModeClass(task.IsEstimatedValueManual)">@ManualLabel(task.IsEstimatedValueManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Probabilidad (%)</label>
+                    <input type="number" @bind="task.Probability" />
+                    <span class="mode-badge @ModeClass(task.IsProbabilityManual)">@ManualLabel(task.IsProbabilityManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>País</label>
+                    <input @bind="task.Country" />
+                    <span class="mode-badge @ModeClass(task.IsCountryManual)">@ManualLabel(task.IsCountryManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Idioma</label>
+                    <input @bind="task.Language" />
+                    <span class="mode-badge @ModeClass(task.IsLanguageManual)">@ManualLabel(task.IsLanguageManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Tipo cliente</label>
+                    <select @bind="task.ClientType">@foreach (var c in ClientTypes){<option>@c</option>}</select>
+                    <span class="mode-badge @ModeClass(task.IsClientTypeManual)">@ManualLabel(task.IsClientTypeManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Cliente</label>
+                    <input @bind="task.ClientName" />
+                    <span class="mode-badge @ModeClass(task.IsClientNameManual)">@ManualLabel(task.IsClientNameManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Contacto</label>
+                    <input @bind="task.ContactName" />
+                    <span class="mode-badge @ModeClass(task.IsContactNameManual)">@ManualLabel(task.IsContactNameManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Cargo contacto</label>
+                    <input @bind="task.ContactRole" />
+                    <span class="mode-badge @ModeClass(task.IsContactRoleManual)">@ManualLabel(task.IsContactRoleManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Email contacto</label>
+                    <input @bind="task.ContactEmail" />
+                    <span class="mode-badge @ModeClass(task.IsContactEmailManual)">@ManualLabel(task.IsContactEmailManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Teléfono contacto</label>
+                    <input @bind="task.ContactPhone" />
+                    <span class="mode-badge @ModeClass(task.IsContactPhoneManual)">@ManualLabel(task.IsContactPhoneManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Móvil contacto</label>
+                    <input @bind="task.ContactMobile" />
+                    <span class="mode-badge @ModeClass(task.IsContactMobileManual)">@ManualLabel(task.IsContactMobileManual)</span>
+                </div>
+                <div class="field-group field-group-wide">
+                    <label>Contactos del cliente</label>
+                    <div class="task-kv-list">
+                        @for (var i = 0; i < contacts.Count; i++)
+                        {
+                            var c = contacts[i];
+                            <div class="task-contact-row">
+                                <input placeholder="Nombre" @bind="c.Name" />
+                                <input placeholder="Cargo" @bind="c.Role" />
+                                <input placeholder="Email" @bind="c.Email" />
+                                <input placeholder="Teléfono" @bind="c.Phone" />
+                                <input placeholder="Móvil" @bind="c.Mobile" />
+                                <button type="button" class="secondary" @onclick="() => RemoveContact(i)">Quitar</button>
+                            </div>
+                        }
+                    </div>
+                    <button type="button" class="secondary" @onclick="AddContact">Añadir contacto</button>
+                </div>
+                <div class="field-group">
+                    <label>Responsable comercial interno</label>
+                    <input @bind="task.CommercialOwner" />
+                    <span class="mode-badge @ModeClass(task.IsCommercialOwnerManual)">@ManualLabel(task.IsCommercialOwnerManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Próxima acción</label>
+                    <input @bind="task.NextAction" />
+                    <span class="mode-badge @ModeClass(task.IsNextActionManual)">@ManualLabel(task.IsNextActionManual)</span>
+                </div>
+                <div class="field-group">
+                    <label>Fecha próxima acción</label>
+                    <input type="date" @bind="task.NextActionDate" />
+                </div>
+                <div class="field-group field-group-wide">
+                    <label>Notas internas</label>
+                    <textarea rows="5" @bind="task.InternalNotes"></textarea>
+                </div>
+                <div class="field-group field-group-wide">
+                    <label><input type="checkbox" @bind="task.IsArchivedLocally" /> Archivada</label>
+                </div>
+            </div>
+        </section>
+
+        <section class="card task-section">
+            <h3>Información original de Asana</h3>
+            <div class="task-grid">
+                <div class="task-item"><span class="task-label">Descripción</span><span class="task-value">@task.Description</span></div>
+                <div class="task-item"><span class="task-label">Creada</span><span class="task-value">@task.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</span></div>
+                <div class="task-item"><span class="task-label">Modificada</span><span class="task-value">@task.ModifiedAt.ToString("dd/MM/yyyy HH:mm")</span></div>
+                <div class="task-item"><span class="task-label">Vencimiento</span><span class="task-value">@task.DueOn?.ToString("dd/MM/yyyy")</span></div>
+                <div class="task-item"><span class="task-label">Completada</span><span class="task-value">@(task.IsCompleted ? "Sí" : "No") @task.CompletedAt?.ToString("dd/MM/yyyy HH:mm")</span></div>
+                <div class="task-item"><span class="task-label">Stories</span><span class="task-value">@task.StoryCount</span></div>
+            </div>
+            <div class="task-json-block">
+                <div>
+                    <strong>Tags</strong>
+                    @if (tagItems.Count == 0)
+                    {
+                        <p class="muted" style="margin-top:6px;">Sin tags</p>
+                    }
+                    else
+                    {
+                        <div class="task-tag-list">
+                            @foreach (var tag in tagItems)
+                            {
+                                <span class="task-tag">@tag</span>
+                            }
+                        </div>
+                    }
+                </div>
+                <div>
+                    <strong>Custom fields</strong>
+                    @if (customFieldItems.Count == 0)
+                    {
+                        <p class="muted" style="margin-top:6px;">Sin custom fields</p>
+                    }
+                    else
+                    {
+                        <div class="task-kv-list">
+                            @foreach (var item in customFieldItems)
+                            {
+                                <div class="task-kv-row">
+                                    <span class="task-kv-key">@item.Key</span>
+                                    <span class="task-kv-value">@item.Value</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <div><strong>Último auto-enrichment</strong><pre>@task.LastAutoEnrichedAt?.ToString("dd/MM/yyyy HH:mm")
+@task.AutoEnrichmentNotes</pre></div>
+                <div><strong>Contactos detectados (ticket)</strong><pre>@task.ContactsJson</pre></div>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private CommercialTask? task;
+    private string? message;
+    private List<KeyValuePair<string, string>> customFieldItems = [];
+    private List<string> tagItems = [];
+    private List<ContactEditor> contacts = [];
+
+    private static readonly string[] LocalStatuses = ["Nuevo", "Contactado", "Seguimiento", "Oferta enviada", "Negociación", "Pendiente aceptación", "Ganado", "Perdido", "Dormido"];
+    private static readonly string[] Priorities = ["Baja", "Media", "Alta", "Crítica"];
+    private static readonly string[] ClientTypes = ["Hospital público", "Hospital privado", "Lavandería", "Distribuidor", "Industria", "Otro"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        task = await TaskService.GetByIdAsync(id);
+        RefreshParsedAsanaMetadata();
+        LoadContactsFromTask();
+    }
+
+    private async Task RecalculateAuto()
+    {
+        if (task is null) return;
+        await TaskService.RecalculateAutoFieldsAsync(task.Id);
+        task = await TaskService.GetByIdAsync(task.Id);
+        RefreshParsedAsanaMetadata();
+        LoadContactsFromTask();
+        message = "Campos automáticos recalculados.";
+    }
+
+    private async Task ConvertAllToManual()
+    {
+        if (task is null) return;
+        await TaskService.ConvertAllToManualAsync(task.Id);
+        task = await TaskService.GetByIdAsync(task.Id);
+        RefreshParsedAsanaMetadata();
+        LoadContactsFromTask();
+        message = "Todos los campos pasaron a manual.";
+    }
+
+    private static string ManualLabel(bool isManual) => isManual ? "Manual" : "Automático";
+
+    private static string ModeClass(bool isManual) => isManual ? "manual" : "auto";
+
+    private async Task Save()
+    {
+        if (task is null)
+        {
+            return;
+        }
+
+        SyncContactsToTask();
+        await TaskService.UpdateLocalFieldsAsync(task);
+        RefreshParsedAsanaMetadata();
+        message = "Guardado correctamente.";
+    }
+
+    private void Back() => Nav.NavigateTo("/");
+
+    private void RefreshParsedAsanaMetadata()
+    {
+        customFieldItems = ParseCustomFields(task?.CustomFieldsJson);
+        tagItems = ParseTags(task?.TagsJson);
+    }
+
+    private static List<KeyValuePair<string, string>> ParseCustomFields(string? json)
+    {
+        var result = new List<KeyValuePair<string, string>>();
+        if (string.IsNullOrWhiteSpace(json))
+            return result;
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+                return result;
+
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                if (!item.TryGetProperty("name", out var nameEl))
+                    continue;
+
+                var name = nameEl.GetString();
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+
+                string? value = null;
+                if (item.TryGetProperty("display_value", out var displayEl) && displayEl.ValueKind != System.Text.Json.JsonValueKind.Null)
+                    value = displayEl.GetString();
+                else if (item.TryGetProperty("text_value", out var textEl) && textEl.ValueKind != System.Text.Json.JsonValueKind.Null)
+                    value = textEl.GetString();
+                else if (item.TryGetProperty("number_value", out var numberEl) && numberEl.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    value = numberEl.GetDecimal().ToString();
+                else if (item.TryGetProperty("enum_value", out var enumEl) && enumEl.ValueKind != System.Text.Json.JsonValueKind.Null && enumEl.TryGetProperty("name", out var enumNameEl))
+                    value = enumNameEl.GetString();
+
+                if (!string.IsNullOrWhiteSpace(value))
+                    result.Add(new KeyValuePair<string, string>(name, value));
+            }
+        }
+        catch
+        {
+            // ignore parse errors and keep empty/partial list
+        }
+
+        return result;
+    }
+
+    private static List<string> ParseTags(string? json)
+    {
+        var result = new List<string>();
+        if (string.IsNullOrWhiteSpace(json))
+            return result;
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+                return result;
+
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                if (item.TryGetProperty("name", out var nameEl) && nameEl.ValueKind != System.Text.Json.JsonValueKind.Null)
+                {
+                    var name = nameEl.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        result.Add(name);
+                }
+            }
+        }
+        catch
+        {
+            // ignore parse errors and keep empty list
+        }
+
+        return result;
+    }
+
+    private void LoadContactsFromTask()
+    {
+        contacts = ParseContacts(task?.ContactsJson);
+
+        if (contacts.Count == 0 && task is not null &&
+            (!string.IsNullOrWhiteSpace(task.ContactName) ||
+             !string.IsNullOrWhiteSpace(task.ContactEmail) ||
+             !string.IsNullOrWhiteSpace(task.ContactPhone) ||
+             !string.IsNullOrWhiteSpace(task.ContactMobile)))
+        {
+            contacts.Add(new ContactEditor
+            {
+                Name = task.ContactName,
+                Role = task.ContactRole,
+                Email = task.ContactEmail,
+                Phone = task.ContactPhone,
+                Mobile = task.ContactMobile
+            });
+        }
+
+        if (contacts.Count == 0)
+        {
+            contacts.Add(new ContactEditor());
+        }
+    }
+
+    private void SyncContactsToTask()
+    {
+        if (task is null)
+            return;
+
+        var cleaned = contacts
+            .Where(c => !string.IsNullOrWhiteSpace(c.Name) || !string.IsNullOrWhiteSpace(c.Email) || !string.IsNullOrWhiteSpace(c.Phone) || !string.IsNullOrWhiteSpace(c.Mobile) || !string.IsNullOrWhiteSpace(c.Role))
+            .ToList();
+
+        task.ContactsJson = cleaned.Count == 0
+            ? null
+            : System.Text.Json.JsonSerializer.Serialize(cleaned.Select(c => new
+            {
+                name = c.Name,
+                role = c.Role,
+                email = c.Email,
+                phone = c.Phone,
+                mobile = c.Mobile
+            }));
+
+        var first = cleaned.FirstOrDefault();
+        task.ContactName = first?.Name;
+        task.ContactRole = first?.Role;
+        task.ContactEmail = first?.Email;
+        task.ContactPhone = first?.Phone;
+        task.ContactMobile = first?.Mobile;
+    }
+
+    private static List<ContactEditor> ParseContacts(string? json)
+    {
+        var result = new List<ContactEditor>();
+        if (string.IsNullOrWhiteSpace(json))
+            return result;
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+                return result;
+
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                var contact = new ContactEditor
+                {
+                    Name = TryRead(item, "name"),
+                    Role = TryRead(item, "role") ?? TryRead(item, "cargo"),
+                    Email = TryRead(item, "email") ?? TryRead(item, "correo"),
+                    Phone = TryRead(item, "phone") ?? TryRead(item, "telefono") ?? TryRead(item, "teléfono"),
+                    Mobile = TryRead(item, "mobile") ?? TryRead(item, "movil") ?? TryRead(item, "móvil")
+                };
+
+                if (!string.IsNullOrWhiteSpace(contact.Name) || !string.IsNullOrWhiteSpace(contact.Email) || !string.IsNullOrWhiteSpace(contact.Phone) || !string.IsNullOrWhiteSpace(contact.Mobile) || !string.IsNullOrWhiteSpace(contact.Role))
+                    result.Add(contact);
+            }
+        }
+        catch
+        {
+            // ignore parse errors
+        }
+
+        return result;
+    }
+
+    private static string? TryRead(System.Text.Json.JsonElement item, string key)
+    {
+        if (item.TryGetProperty(key, out var val) && val.ValueKind != System.Text.Json.JsonValueKind.Null)
+            return val.GetString();
+        return null;
+    }
+
+    private void AddContact() => contacts.Add(new ContactEditor());
+
+    private void RemoveContact(int index)
+    {
+        if (index >= 0 && index < contacts.Count)
+            contacts.RemoveAt(index);
+        if (contacts.Count == 0)
+            contacts.Add(new ContactEditor());
+    }
+
+    private sealed class ContactEditor
+    {
+        public string? Name { get; set; }
+        public string? Role { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? Mobile { get; set; }
+    }
+}
