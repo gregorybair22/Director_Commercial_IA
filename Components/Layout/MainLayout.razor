@@ -1,15 +1,17 @@
 @inherits LayoutComponentBase
 
-<div class="shell">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <h2 class="flex items-center gap-2">
-                <span class="sidebar-logo" aria-hidden="true">L</span>
-                <span>LFS</span>
-            </h2>
-            <p class="sidebar-brand-sub">Proyecto Asana</p>
+<div class="shell" id="app-shell">
+    <aside class="sidebar" aria-label="Sidebar navigation">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <h2 class="flex items-center gap-2">
+                    <span class="sidebar-logo" aria-hidden="true">L</span>
+                    <span>LFS</span>
+                </h2>
+                <p class="sidebar-brand-sub">Proyecto Asana</p>
+            </div>
+            <ProjectSelector @rendermode="InteractiveServer" />
         </div>
-        <ProjectSelector @rendermode="InteractiveServer" />
         <nav class="sidebar-nav" aria-label="Main">
             <NavLink class="sidebar-nav-link" ActiveClass="is-active" href="/" Match="NavLinkMatch.All">Dashboard</NavLink>
             <NavLink class="sidebar-nav-link" ActiveClass="is-active" href="/pipeline">Pipeline</NavLink>
@@ -19,8 +21,20 @@
             <hr class="sidebar-divider" />
             <SidebarMailNav />
         </nav>
+        <div class="sidebar-tip" aria-label="Pro tip">
+            <p class="sidebar-tip-label">Pro tip</p>
+            <p class="sidebar-tip-text">Import contacts first, then work through phases 1–5 to track replies.</p>
+            <a class="sidebar-tip-link" href="/mail/import">Import contacts →</a>
+        </div>
     </aside>
-    <main class="content">
-        @Body
-    </main>
+
+    <div class="main-column">
+        <AppTopbar @rendermode="InteractiveServer" />
+        <main class="content-scroll">
+            <div class="content-body">
+                @Body
+            </div>
+        </main>
+        <AppFooter />
+    </div>
 </div>

@@ -1,0 +1,46 @@
+@inject IJSRuntime JS
+
+<header class="app-topbar" aria-label="Application header">
+    <div class="app-topbar-start">
+        <button type="button"
+                class="app-topbar-menu-btn"
+                aria-label="Toggle navigation"
+                aria-expanded="@(!sidebarCollapsed)"
+                @onclick="ToggleSidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="app-topbar-search" role="search">
+        <svg class="app-topbar-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+        </svg>
+        <input type="search"
+               class="app-topbar-search-input"
+               placeholder="Search anything..."
+               aria-label="Search" />
+    </div>
+
+    <div class="app-topbar-actions">
+
+        <div class="app-topbar-user">
+            <span class="app-topbar-avatar" aria-hidden="true">JD</span>
+            <div class="app-topbar-user-text">
+                <strong>Jane Doe</strong>
+                <span>jane.doe@example.com</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+@code {
+    private bool sidebarCollapsed;
+
+    private async Task ToggleSidebar()
+    {
+        sidebarCollapsed = await JS.InvokeAsync<bool>("appLayout.toggleSidebar");
+    }
+}
