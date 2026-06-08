@@ -1,0 +1,1500 @@
+@import "tailwindcss";
+
+@source "../Components/**/*.razor";
+@source "../AppRoot.razor";
+
+@layer base {
+  body {
+    @apply m-0 bg-slate-50 text-slate-900 antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+
+  h1 {
+    @apply text-3xl font-bold tracking-tight text-slate-900;
+  }
+
+  h2 {
+    @apply text-xl font-semibold tracking-tight text-slate-800;
+  }
+
+  a {
+    @apply text-blue-700 no-underline hover:text-blue-800;
+  }
+}
+
+@layer components {
+  .shell {
+    @apply flex min-h-screen;
+  }
+
+  .sidebar {
+    @apply w-60 shrink-0 bg-slate-900 p-6 text-white;
+  }
+
+  .sidebar h2 {
+    @apply mt-0 text-xl font-bold text-white;
+  }
+
+  .sidebar a {
+    @apply block py-2.5 text-white/90 no-underline transition hover:text-white;
+  }
+
+  .sidebar-project {
+    @apply mb-3.5;
+  }
+
+  .sidebar-project label {
+    @apply mb-1.5 block text-xs text-slate-300;
+  }
+
+  .sidebar-project select {
+    @apply w-full min-w-0 rounded-md border-slate-600 bg-slate-950 text-white;
+  }
+
+  .sidebar-message {
+    @apply my-2 text-xs text-slate-300;
+  }
+
+  .content {
+    @apply flex-1 overflow-x-auto p-8;
+  }
+
+  .muted {
+    @apply text-slate-500;
+  }
+
+  .actions {
+    @apply my-5 flex flex-wrap items-center gap-3;
+  }
+
+  button,
+  .button {
+    @apply cursor-pointer rounded-lg border-0 bg-slate-900 px-4 py-2.5 text-sm text-white transition hover:bg-slate-800;
+  }
+
+  button:disabled {
+    @apply cursor-wait opacity-60;
+  }
+
+  .secondary {
+    @apply bg-slate-200 text-slate-900 hover:bg-slate-300;
+  }
+
+  .cards {
+    @apply my-6 grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .card {
+    @apply rounded-2xl bg-white p-4 shadow-sm;
+  }
+
+  .card strong {
+    @apply block text-3xl;
+  }
+
+  .card span {
+    @apply text-slate-500;
+  }
+
+  .card.danger strong {
+    @apply text-red-700;
+  }
+
+  .card.warning strong {
+    @apply text-amber-700;
+  }
+
+  .alert {
+    @apply my-4 rounded-lg px-4 py-3;
+  }
+
+  .error {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .ok {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+
+  table {
+    @apply w-full overflow-hidden rounded-xl bg-white shadow-sm;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    @apply border-b border-slate-200 px-3 py-2.5 text-left align-top;
+  }
+
+  th {
+    @apply bg-slate-50 text-sm text-slate-600;
+  }
+
+  .filters {
+    @apply my-5 flex flex-wrap gap-3;
+  }
+
+  input,
+  select {
+    @apply min-w-60 rounded-lg border border-slate-300 px-3 py-2.5;
+  }
+
+  .pipeline-kanban {
+    @apply my-3.5 mb-6 grid gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+
+  .pipeline-column {
+    @apply min-h-28 rounded-xl border border-slate-200 bg-white p-3;
+  }
+
+  .pipeline-column h3 {
+    @apply m-0 mb-2 text-sm font-semibold;
+  }
+
+  .pipeline-column.clickable,
+  .card.clickable {
+    @apply cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  .funnel-wrap {
+    @apply mb-5 rounded-xl bg-white p-3.5 shadow-sm;
+  }
+
+  .funnel-row {
+    @apply my-2 grid items-center gap-2.5;
+    grid-template-columns: minmax(130px, 180px) 1fr 110px;
+  }
+
+  .funnel-label {
+    @apply text-sm text-slate-600;
+  }
+
+  .funnel-bar {
+    @apply h-6 rounded-md bg-gradient-to-r from-blue-700 to-blue-500;
+  }
+
+  .funnel-conv {
+    @apply text-right text-xs text-slate-500;
+  }
+
+  .pipeline-grid-2 {
+    @apply my-4 grid grid-cols-1 gap-4 md:grid-cols-2;
+  }
+
+  .metric-row {
+    @apply my-2.5 grid items-center gap-2.5 text-sm;
+    grid-template-columns: 140px 1fr 140px;
+  }
+
+  .metric-bar-container {
+    @apply h-4 overflow-hidden rounded-lg bg-slate-100;
+  }
+
+  .metric-bar {
+    @apply h-full bg-blue-700;
+  }
+
+  .metric-bar.danger {
+    @apply bg-red-600;
+  }
+
+  .critical-panel {
+    @apply my-3 mb-6 grid gap-2.5;
+  }
+
+  .critical-item {
+    @apply flex items-center justify-between gap-3 rounded-lg border border-red-200 border-l-4 border-l-red-500 bg-white px-3 py-2.5;
+  }
+
+  .pipeline-master-detail {
+    @apply flex min-h-[560px] flex-col gap-3;
+    height: calc(100vh - 230px);
+  }
+
+  .pipeline-master-pane {
+    @apply min-h-0 shrink-0 overflow-auto pr-1;
+    flex: 0 0 60%;
+  }
+
+  .pipeline-layout-divider {
+    @apply h-0.5 rounded-full bg-gradient-to-r from-slate-300 via-slate-400 to-slate-300 shadow-sm;
+  }
+
+  .pipeline-detail-pane {
+    @apply flex min-h-0 shrink-0 flex-col rounded-xl border border-slate-200 bg-white px-2.5 py-2 shadow-sm;
+    flex: 0 0 40%;
+  }
+
+  .pipeline-detail-pane-header {
+    @apply mb-1 flex flex-wrap items-center justify-between gap-2;
+  }
+
+  .pipeline-detail-pane-header h2 {
+    @apply m-0 text-base leading-tight;
+  }
+
+  .pipeline-detail-pane-header button {
+    @apply rounded-md px-2.5 py-1.5 text-sm;
+  }
+
+  .pipeline-detail-pane p {
+    @apply my-1 text-xs leading-snug;
+  }
+
+  .pipeline-detail-pane h3,
+  .pipeline-detail-pane h4 {
+    @apply my-1 leading-tight;
+  }
+
+  .pipeline-detail-scroll {
+    @apply mt-1 min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200;
+  }
+
+  .pipeline-detail-scroll table {
+    @apply m-0 min-w-[720px] rounded-none shadow-none;
+  }
+
+  .pipeline-detail-scroll th {
+    @apply sticky top-0 z-10;
+  }
+
+  .pipeline-detail-scroll th,
+  .pipeline-detail-scroll td {
+    @apply px-2 py-1.5 text-xs leading-snug;
+  }
+
+  .task-page {
+    @apply grid gap-4;
+  }
+
+  .task-head {
+    @apply flex items-start justify-between gap-4;
+  }
+
+  .task-head h1 {
+    @apply m-0 mb-1 text-3xl;
+  }
+
+  .task-actions {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .task-section {
+    @apply p-5;
+  }
+
+  .task-section h3 {
+    @apply mb-3.5 mt-0 text-lg;
+  }
+
+  .task-grid {
+    @apply grid gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .task-item {
+    @apply rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5;
+  }
+
+  .task-label {
+    @apply mb-1 block text-xs text-slate-500;
+  }
+
+  .task-value {
+    @apply break-words text-sm text-slate-900;
+  }
+
+  .task-form-grid {
+    @apply grid gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .field-group {
+    @apply grid gap-1.5;
+  }
+
+  .field-group label {
+    @apply text-xs font-semibold text-slate-600;
+  }
+
+  .field-group input,
+  .field-group select,
+  .field-group textarea {
+    @apply box-border w-full min-w-0;
+  }
+
+  .field-group-wide {
+    @apply col-span-full;
+  }
+
+  .mode-badge {
+    @apply inline-block w-fit rounded-full px-2 py-0.5 text-xs font-semibold;
+  }
+
+  .mode-badge.auto {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+
+  .mode-badge.manual {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  /* Mail Dashboard */
+  .mail-dash {
+    @apply mx-auto grid gap-7;
+  }
+
+  .mail-dash-header {
+    @apply flex flex-wrap items-start justify-between gap-5;
+  }
+
+  .mail-dash-header h1 {
+    @apply m-0 mb-2 text-3xl font-bold tracking-tight text-slate-900;
+  }
+
+  .mail-dash-lead {
+    @apply m-0 max-w-2xl text-base leading-relaxed text-slate-500;
+  }
+
+  .mail-dash-toolbar {
+    @apply flex shrink-0 items-center gap-3;
+  }
+
+  .mail-dash-icon-btn {
+    @apply relative inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm;
+  }
+
+  .mail-dash-icon-btn svg {
+    @apply h-5 w-5;
+  }
+
+  .mail-dash-badge {
+    @apply absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-blue-500 px-1 text-[11px] font-bold leading-none text-white;
+  }
+
+  .mail-dash-date-range {
+    @apply inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm;
+  }
+
+  .mail-dash-date-range svg {
+    @apply h-[18px] w-[18px] shrink-0 text-slate-500;
+  }
+
+  .mail-dash-kpis {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .mail-dash-kpi {
+    @apply grid items-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm;
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .mail-dash-kpi-icon {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl;
+  }
+
+  .mail-dash-kpi-icon svg {
+    @apply h-[22px] w-[22px];
+  }
+
+  .mail-dash-kpi-body strong {
+    @apply block text-3xl font-bold leading-tight text-slate-900;
+  }
+
+  .mail-dash-kpi-body span {
+    @apply mt-0.5 block text-sm text-slate-500;
+  }
+
+  .mail-dash-kpi-chart {
+    @apply h-9 w-[88px] shrink-0;
+  }
+
+  .mail-dash-kpi-chart svg {
+    @apply block h-full w-full;
+  }
+
+  .mail-dash-kpi-blue .mail-dash-kpi-icon {
+    @apply bg-blue-50 text-blue-500;
+  }
+
+  .mail-dash-spark-blue {
+    @apply text-blue-300;
+  }
+
+  .mail-dash-kpi-green .mail-dash-kpi-icon {
+    @apply bg-emerald-50 text-emerald-600;
+  }
+
+  .mail-dash-spark-green {
+    @apply text-emerald-300;
+  }
+
+  .mail-dash-kpi-orange .mail-dash-kpi-icon {
+    @apply bg-orange-50 text-orange-600;
+  }
+
+  .mail-dash-spark-orange {
+    @apply text-orange-300;
+  }
+
+  .mail-dash-kpi-red .mail-dash-kpi-icon {
+    @apply bg-red-50 text-red-600;
+  }
+
+  .mail-dash-spark-red {
+    @apply text-red-300;
+  }
+
+  .mail-dash-section-head h2 {
+    @apply m-0 mb-1.5 text-2xl font-bold text-slate-900;
+  }
+
+  .mail-dash-section-head p {
+    @apply m-0 text-sm text-slate-500;
+  }
+
+  .mail-dash-phase-grid {
+    @apply mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5;
+  }
+
+  .mail-dash-phase-card {
+    @apply flex min-h-full flex-col rounded-2xl border border-slate-200 bg-white px-4 pb-4 pt-5 text-inherit no-underline shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  .mail-dash-phase-card:hover {
+    @apply text-inherit no-underline;
+  }
+
+  .mail-dash-phase-icon {
+    @apply mb-3.5 flex h-11 w-11 items-center justify-center rounded-xl;
+  }
+
+  .mail-dash-phase-icon svg {
+    @apply h-[22px] w-[22px];
+  }
+
+  .mail-dash-phase-label {
+    @apply m-0 mb-1 text-[11px] font-bold uppercase tracking-wider;
+  }
+
+  .mail-dash-phase-card h3 {
+    @apply m-0 mb-1.5 text-lg font-bold text-slate-900;
+  }
+
+  .mail-dash-phase-desc {
+    @apply m-0 mb-4 flex-1 text-sm leading-snug text-slate-500;
+  }
+
+  .mail-dash-phase-stats {
+    @apply m-0 mb-4 grid list-none gap-2 p-0 text-sm text-slate-600;
+  }
+
+  .mail-dash-phase-stats li {
+    @apply flex items-center gap-2;
+  }
+
+  .mail-dash-phase-stats strong {
+    @apply ml-auto font-semibold text-slate-900;
+  }
+
+  .mail-dash-dot {
+    @apply h-2 w-2 shrink-0 rounded-full;
+  }
+
+  .mail-dash-dot-blue {
+    @apply bg-blue-500;
+  }
+
+  .mail-dash-dot-green {
+    @apply bg-emerald-500;
+  }
+
+  .mail-dash-dot-orange {
+    @apply bg-orange-500;
+  }
+
+  .mail-dash-dot-red {
+    @apply bg-red-500;
+  }
+
+  .mail-dash-phase-cta {
+    @apply mt-auto inline-flex w-fit items-center gap-1.5 rounded-lg border-[1.5px] border-current px-3.5 py-2 text-sm font-semibold transition;
+  }
+
+  .mail-dash-phase-card:hover .mail-dash-phase-cta {
+    @apply bg-current text-white;
+  }
+
+  .mail-dash-phase-1 .mail-dash-phase-icon {
+    @apply bg-blue-50 text-blue-500;
+  }
+
+  .mail-dash-phase-1 .mail-dash-phase-label,
+  .mail-dash-phase-1 .mail-dash-phase-cta {
+    @apply text-blue-500;
+  }
+
+  .mail-dash-phase-2 .mail-dash-phase-icon {
+    @apply bg-violet-50 text-violet-600;
+  }
+
+  .mail-dash-phase-2 .mail-dash-phase-label,
+  .mail-dash-phase-2 .mail-dash-phase-cta {
+    @apply text-violet-600;
+  }
+
+  .mail-dash-phase-3 .mail-dash-phase-icon {
+    @apply bg-teal-50 text-teal-600;
+  }
+
+  .mail-dash-phase-3 .mail-dash-phase-label,
+  .mail-dash-phase-3 .mail-dash-phase-cta {
+    @apply text-teal-600;
+  }
+
+  .mail-dash-phase-4 .mail-dash-phase-icon {
+    @apply bg-amber-50 text-amber-600;
+  }
+
+  .mail-dash-phase-4 .mail-dash-phase-label,
+  .mail-dash-phase-4 .mail-dash-phase-cta {
+    @apply text-amber-600;
+  }
+
+  .mail-dash-phase-5 .mail-dash-phase-icon {
+    @apply bg-red-50 text-red-600;
+  }
+
+  .mail-dash-phase-5 .mail-dash-phase-label,
+  .mail-dash-phase-5 .mail-dash-phase-cta {
+    @apply text-red-600;
+  }
+
+  .mail-dash-tip {
+    @apply relative flex items-center gap-3.5 overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-slate-50 px-5 py-4;
+  }
+
+  .mail-dash-tip-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-200 text-blue-600;
+  }
+
+  .mail-dash-tip-icon svg {
+    @apply h-5 w-5;
+  }
+
+  .mail-dash-tip p {
+    @apply m-0 flex-1 text-sm leading-relaxed text-slate-700;
+  }
+
+  .mail-dash-tip-art {
+    @apply shrink-0 opacity-90;
+  }
+
+  .mail-dash-tip-art svg {
+    @apply block h-16 w-28;
+  }
+
+  .mail-phase-grid {
+    @apply my-5 grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .mail-phase-card {
+    @apply block cursor-pointer text-inherit transition hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  .mail-phase-metrics {
+    @apply mt-2.5 flex flex-col gap-1 text-sm text-slate-500;
+  }
+
+  .mail-merge-fields {
+    @apply my-3 flex flex-wrap items-center gap-2;
+  }
+
+  .mail-merge-chip {
+    @apply px-2.5 py-1 text-xs;
+  }
+
+  .mail-code-block {
+    @apply overflow-x-auto rounded-lg bg-slate-900 px-4 py-3 text-sm text-sky-300;
+  }
+
+  .mail-comment-list {
+    @apply mb-6 list-none p-0;
+  }
+
+  .mail-comment-list li {
+    @apply mb-2 rounded-lg bg-white px-3.5 py-2.5 shadow-sm;
+  }
+
+  .row-replied {
+    @apply bg-emerald-50;
+  }
+
+  .task-json-block {
+    @apply mt-3 grid gap-2.5;
+  }
+
+  .task-json-block pre {
+    @apply mt-1.5 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-900 p-2.5 text-xs text-slate-100;
+  }
+
+  .task-kv-list {
+    @apply mt-2 overflow-hidden rounded-lg border border-slate-200;
+  }
+
+  .task-kv-row {
+    @apply grid gap-2.5 border-b border-slate-200 bg-white px-2.5 py-2 text-sm last:border-b-0;
+    grid-template-columns: 240px 1fr;
+  }
+
+  .task-kv-key {
+    @apply font-semibold text-slate-600;
+  }
+
+  .task-kv-value {
+    @apply break-words text-slate-900;
+  }
+
+  .task-contact-row {
+    @apply grid gap-2 border-b border-slate-200 bg-white p-2 last:border-b-0;
+    grid-template-columns: 1.2fr 1fr 1.2fr 1fr 1fr auto;
+  }
+
+  .task-contact-row input {
+    @apply min-w-0;
+  }
+
+  .task-tag-list {
+    @apply mt-2 flex flex-wrap gap-1.5;
+  }
+
+  .task-tag {
+    @apply inline-block rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700;
+  }
+
+  /* Mail Import */
+  .mail-import {
+    @apply mx-auto grid gap-6;
+  }
+
+  .mail-import-header {
+    @apply flex flex-wrap items-start justify-between gap-4;
+  }
+
+  .mail-import-header h1 {
+    @apply m-0 mb-2 text-3xl font-bold tracking-tight text-slate-900;
+  }
+
+  .mail-import-lead {
+    @apply m-0 max-w-2xl text-base leading-relaxed text-slate-500;
+  }
+
+  .mail-import-header-actions {
+    @apply flex shrink-0 flex-col items-end gap-2;
+  }
+
+  .mail-import-guide-btn {
+    @apply inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50;
+  }
+
+  .mail-import-guide-btn svg {
+    @apply h-4 w-4 text-slate-500;
+  }
+
+  .mail-import-help {
+    @apply inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800;
+  }
+
+  .mail-import-stepper {
+    @apply flex items-center gap-3;
+  }
+
+  .mail-import-step {
+    @apply flex items-center gap-2;
+  }
+
+  .mail-import-step-badge {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold;
+  }
+
+  .mail-import-step-label {
+    @apply text-sm font-medium text-slate-400;
+  }
+
+  .mail-import-step.is-active .mail-import-step-badge {
+    @apply border-blue-600 bg-blue-600 text-white;
+  }
+
+  .mail-import-step.is-active .mail-import-step-label {
+    @apply font-semibold text-blue-700;
+  }
+
+  .mail-import-step.is-done .mail-import-step-badge {
+    @apply border-blue-600 bg-blue-600 text-white;
+  }
+
+  .mail-import-step.is-done .mail-import-step-label {
+    @apply text-slate-600;
+  }
+
+  .mail-import-step-line {
+    @apply h-0.5 flex-1 rounded-full bg-slate-200;
+  }
+
+  .mail-import-step-line.is-done {
+    @apply bg-blue-400;
+  }
+
+  .mail-import-card {
+    @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .mail-import-card-title {
+    @apply border-b border-slate-100 px-6 py-4 text-lg font-semibold text-slate-900;
+  }
+
+  .mail-import-card-body {
+    @apply space-y-6 p-6;
+  }
+
+  .mail-import-drop {
+    @apply flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition hover:border-blue-400 hover:bg-blue-50/50;
+  }
+
+  .mail-import-drop-icon {
+    @apply flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600;
+  }
+
+  .mail-import-drop-icon svg {
+    @apply h-6 w-6;
+  }
+
+  .mail-import-drop strong {
+    @apply text-base text-slate-800;
+  }
+
+  .mail-import-drop span {
+    @apply text-sm text-slate-500;
+  }
+
+  .mail-import-file-bar {
+    @apply flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3;
+  }
+
+  .mail-import-file-info {
+    @apply flex min-w-0 items-center gap-3;
+  }
+
+  .mail-import-file-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700;
+  }
+
+  .mail-import-file-icon svg {
+    @apply h-5 w-5;
+  }
+
+  .mail-import-file-name {
+    @apply truncate text-sm font-semibold text-slate-900;
+  }
+
+  .mail-import-file-size {
+    @apply text-xs text-slate-500;
+  }
+
+  .mail-import-change-btn {
+    @apply inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100;
+  }
+
+  .mail-import-change-btn svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-import-grid {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6;
+  }
+
+  .mail-import-grid-row2 {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .mail-import-field label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700;
+  }
+
+  .mail-import-field select,
+  .mail-import-field input {
+    @apply w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20;
+  }
+
+  .mail-import-required {
+    @apply text-red-500;
+  }
+
+  .mail-import-toggle-box {
+    @apply flex flex-wrap items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3;
+  }
+
+  .mail-import-toggle-text {
+    @apply flex min-w-0 items-start gap-2 text-sm text-slate-700;
+  }
+
+  .mail-import-toggle-text svg {
+    @apply mt-0.5 h-4 w-4 shrink-0 text-blue-600;
+  }
+
+  .mail-import-toggle {
+    @apply relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center;
+  }
+
+  .mail-import-toggle input {
+    @apply sr-only;
+  }
+
+  .mail-import-toggle-track {
+    @apply h-6 w-11 rounded-full bg-slate-300 transition;
+  }
+
+  .mail-import-toggle input:checked + .mail-import-toggle-track {
+    @apply bg-blue-600;
+  }
+
+  .mail-import-toggle-thumb {
+    @apply absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition;
+  }
+
+  .mail-import-toggle input:checked ~ .mail-import-toggle-thumb {
+    @apply translate-x-5;
+  }
+
+  .mail-import-footer {
+    @apply flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5;
+  }
+
+  .mail-import-footer-right {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .mail-import-btn-back {
+    @apply inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+  }
+
+  .mail-import-btn-preview {
+    @apply inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .mail-import-btn-run {
+    @apply inline-flex items-center gap-2 rounded-lg border-0 bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .mail-import-btn-preview svg,
+  .mail-import-btn-run svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-import-tip {
+    @apply relative flex items-center gap-3.5 overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-slate-50 px-5 py-4;
+  }
+
+  .mail-import-tip-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-200 text-blue-600;
+  }
+
+  .mail-import-tip-icon svg {
+    @apply h-5 w-5;
+  }
+
+  .mail-import-tip p {
+    @apply m-0 flex-1 text-sm leading-relaxed text-slate-700;
+  }
+
+  .mail-import-tip-art svg {
+    @apply block h-14 w-24;
+  }
+
+  .mail-import-preview {
+    @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .mail-import-preview-head {
+    @apply flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4;
+  }
+
+  .mail-import-preview-head h3 {
+    @apply m-0 text-lg font-semibold text-slate-900;
+  }
+
+  .mail-import-preview-head span {
+    @apply text-xs font-medium text-slate-500;
+  }
+
+  .mail-import-preview-body {
+    @apply p-5;
+  }
+
+  .mail-import-hidden-file {
+    @apply hidden;
+  }
+
+  /* Mail Phase */
+  .mail-phase-page {
+    @apply mx-auto grid gap-6;
+  }
+
+  .mail-phase-topbar {
+    @apply flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .mail-phase-back {
+    @apply inline-flex items-center gap-2 text-sm font-medium text-slate-600 no-underline transition hover:text-blue-700;
+  }
+
+  .mail-phase-back svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-phase-guide-btn {
+    @apply inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50;
+  }
+
+  .mail-phase-guide-btn svg {
+    @apply h-4 w-4 text-slate-500;
+  }
+
+  .mail-phase-hero h1 {
+    @apply m-0 flex flex-wrap items-center gap-3 text-3xl font-bold tracking-tight text-slate-900;
+  }
+
+  .mail-phase-badge {
+    @apply inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700;
+  }
+
+  .mail-phase-lead {
+    @apply mt-2 max-w-3xl text-base text-slate-500;
+  }
+
+  .mail-phase-kpis {
+    @apply grid grid-cols-2 gap-4 lg:grid-cols-4;
+  }
+
+  .mail-phase-kpi {
+    @apply flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm;
+  }
+
+  .mail-phase-kpi-icon {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl;
+  }
+
+  .mail-phase-kpi-icon svg {
+    @apply h-11 w-11;
+  }
+
+  .mail-phase-kpi strong {
+    @apply block text-2xl font-bold leading-tight text-slate-900;
+  }
+
+  .mail-phase-kpi span {
+    @apply block text-sm text-slate-500;
+  }
+
+  .mail-phase-kpi-blue .mail-phase-kpi-icon {
+    @apply bg-blue-50 text-blue-600;
+  }
+
+  .mail-phase-kpi-green .mail-phase-kpi-icon {
+    @apply bg-emerald-50 text-emerald-600;
+  }
+
+  .mail-phase-kpi-orange .mail-phase-kpi-icon {
+    @apply bg-orange-50 text-orange-600;
+  }
+
+  .mail-phase-kpi-red .mail-phase-kpi-icon {
+    @apply bg-red-50 text-red-600;
+  }
+
+  .mail-phase-toolbar-actions {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .mail-phase-check-btn {
+    @apply inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50;
+  }
+
+  .mail-phase-compose-card,
+  .mail-phase-recipients-card {
+    @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .mail-phase-card-head {
+    @apply flex items-center gap-2 border-b border-slate-100 px-5 py-4 text-lg font-semibold text-slate-900;
+  }
+
+  .mail-phase-card-head svg {
+    @apply h-5 w-5 text-blue-600;
+  }
+
+  .mail-phase-compose-body {
+    @apply p-5;
+  }
+
+  .mail-phase-compose-layout {
+    @apply grid gap-5 lg:grid-cols-[1fr_220px];
+  }
+
+  .mail-phase-compose-main {
+    @apply grid gap-4;
+  }
+
+  .mail-phase-field label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700;
+  }
+
+  .mail-phase-field input,
+  .mail-phase-field textarea {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20;
+  }
+
+  .mail-phase-field textarea {
+    @apply min-h-[220px] font-mono text-sm leading-relaxed;
+  }
+
+  .mail-phase-editor-toolbar {
+    @apply flex flex-wrap items-center gap-1 rounded-t-lg border border-b-0 border-slate-300 bg-slate-50 px-2 py-1.5;
+  }
+
+  .mail-phase-editor-toolbar button {
+    @apply rounded-md border-0 bg-transparent px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-white;
+  }
+
+  .mail-phase-editor-wrap textarea {
+    @apply rounded-t-none;
+  }
+
+  .mail-phase-editor-footer {
+    @apply flex items-center justify-end gap-2 border border-t-0 border-slate-300 bg-slate-50 px-3 py-2 rounded-b-lg;
+  }
+
+  .mail-phase-mode-btn {
+    @apply rounded-md px-2.5 py-1 text-xs font-medium text-slate-500;
+  }
+
+  .mail-phase-mode-btn.is-active {
+    @apply bg-white text-blue-700 shadow-sm;
+  }
+
+  .mail-phase-preview-box {
+    @apply min-h-[220px] rounded-lg border border-slate-300 bg-white p-4 text-sm leading-relaxed text-slate-800;
+  }
+
+  .mail-phase-aside {
+    @apply flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4;
+  }
+
+  .mail-phase-aside h4 {
+    @apply m-0 text-sm font-semibold text-slate-800;
+  }
+
+  .mail-phase-merge-fields {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .mail-phase-merge-chip {
+    @apply cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-1 font-mono text-xs text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700;
+  }
+
+  .mail-phase-send-btn {
+    @apply mt-auto inline-flex w-full items-center justify-center gap-2 rounded-lg border-0 bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .mail-phase-send-btn svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-phase-recipients-head {
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4;
+  }
+
+  .mail-phase-recipients-head h3 {
+    @apply m-0 flex items-center gap-2 text-lg font-semibold text-slate-900;
+  }
+
+  .mail-phase-recipients-head h3 svg {
+    @apply h-5 w-5 text-blue-600;
+  }
+
+  .mail-phase-recipients-tools {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .mail-phase-search {
+    @apply relative;
+  }
+
+  .mail-phase-search svg {
+    @apply absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400;
+  }
+
+  .mail-phase-search input {
+    @apply w-56 rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20;
+  }
+
+  .mail-phase-filter-btn {
+    @apply inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+  }
+
+  .mail-phase-filter-btn svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-phase-filters {
+    @apply grid gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .mail-phase-table-wrap {
+    @apply overflow-x-auto;
+  }
+
+  .mail-phase-table {
+    @apply m-0 w-full min-w-[900px] rounded-none shadow-none;
+  }
+
+  .mail-phase-table th {
+    @apply bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500;
+  }
+
+  .mail-phase-table td {
+    @apply text-sm;
+  }
+
+  .mail-phase-recipient {
+    @apply flex items-center gap-3;
+  }
+
+  .mail-phase-avatar {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white;
+  }
+
+  .mail-phase-recipient-name {
+    @apply font-medium text-slate-900;
+  }
+
+  .mail-phase-recipient-email {
+    @apply text-xs text-slate-500;
+  }
+
+  .mail-phase-country {
+    @apply inline-flex items-center gap-1.5 text-sm text-slate-700;
+  }
+
+  .mail-phase-status {
+    @apply inline-flex items-center gap-1.5 text-sm;
+  }
+
+  .mail-phase-status-dot {
+    @apply h-2 w-2 rounded-full;
+  }
+
+  .mail-phase-status-dot.yes {
+    @apply bg-emerald-500;
+  }
+
+  .mail-phase-status-dot.no {
+    @apply bg-red-400;
+  }
+
+  .mail-phase-detail-link {
+    @apply text-sm font-medium text-blue-600 no-underline hover:text-blue-800 hover:underline;
+  }
+
+  .mail-phase-table-footer {
+    @apply flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4;
+  }
+
+  .mail-phase-pagination {
+    @apply inline-flex items-center gap-1;
+  }
+
+  .mail-phase-page-btn {
+    @apply rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .mail-phase-page-num {
+    @apply inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-blue-600 px-2 text-sm font-semibold text-white;
+  }
+
+  /* Mail Gmail */
+  .mail-gmail-page {
+    @apply mx-auto grid gap-6;
+  }
+
+  .mail-gmail-header {
+    @apply flex flex-wrap items-start justify-between gap-4;
+  }
+
+  .mail-gmail-header h1 {
+    @apply m-0 mb-2 text-3xl font-bold tracking-tight text-slate-900;
+  }
+
+  .mail-gmail-lead {
+    @apply m-0 max-w-2xl text-base leading-relaxed text-slate-500;
+  }
+
+  .mail-gmail-guide-btn {
+    @apply inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50;
+  }
+
+  .mail-gmail-guide-btn svg {
+    @apply h-4 w-4 text-slate-500;
+  }
+
+  .mail-gmail-card {
+    @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .mail-gmail-setup-grid {
+    @apply grid gap-5 p-6 lg:grid-cols-[1fr_280px];
+  }
+
+  .mail-gmail-setup-main {
+    @apply grid gap-4;
+  }
+
+  .mail-gmail-section-title {
+    @apply m-0 flex items-center gap-2 text-lg font-semibold text-slate-900;
+  }
+
+  .mail-gmail-section-title-icon {
+    @apply flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600;
+  }
+
+  .mail-gmail-section-title-icon svg {
+    @apply h-5 w-5;
+  }
+
+  .mail-gmail-setup-intro {
+    @apply m-0 text-sm text-slate-600;
+  }
+
+  .mail-gmail-checklist {
+    @apply grid gap-3;
+  }
+
+  .mail-gmail-check-item {
+    @apply flex items-start gap-3;
+  }
+
+  .mail-gmail-check-icon {
+    @apply mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600;
+  }
+
+  .mail-gmail-check-icon svg {
+    @apply h-3 w-3;
+  }
+
+  .mail-gmail-check-item strong {
+    @apply block text-sm font-semibold text-slate-800;
+  }
+
+  .mail-gmail-check-item span {
+    @apply block text-sm text-slate-500;
+  }
+
+  .mail-gmail-uri-box {
+    @apply flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-3;
+  }
+
+  .mail-gmail-uri-box code {
+    @apply min-w-0 flex-1 break-all font-mono text-sm text-sky-300;
+  }
+
+  .mail-gmail-copy-btn {
+    @apply shrink-0 rounded-md border-0 bg-slate-800 p-2 text-slate-300 transition hover:bg-slate-700 hover:text-white;
+  }
+
+  .mail-gmail-copy-btn svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-gmail-footnote {
+    @apply m-0 text-sm text-slate-500;
+  }
+
+  .mail-gmail-info-box {
+    @apply flex flex-col gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4;
+  }
+
+  .mail-gmail-info-box h4 {
+    @apply m-0 flex items-center gap-2 text-sm font-semibold text-blue-900;
+  }
+
+  .mail-gmail-info-box p {
+    @apply m-0 text-sm leading-relaxed text-slate-700;
+  }
+
+  .mail-gmail-info-link {
+    @apply inline-flex items-center gap-1 text-sm font-medium text-blue-700 no-underline hover:text-blue-800 hover:underline;
+  }
+
+  .mail-gmail-info-art svg {
+    @apply mt-1 block h-16 w-full max-w-[220px];
+  }
+
+  .mail-gmail-status-head {
+    @apply border-b border-slate-100 px-6 py-4;
+  }
+
+  .mail-gmail-status-head h2 {
+    @apply m-0 text-lg font-semibold text-slate-900;
+  }
+
+  .mail-gmail-status-head p {
+    @apply m-0 mt-1 text-sm text-slate-500;
+  }
+
+  .mail-gmail-status-body {
+    @apply space-y-5 p-6;
+  }
+
+  .mail-gmail-connected-banner {
+    @apply flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4;
+  }
+
+  .mail-gmail-connected-left {
+    @apply flex min-w-0 items-center gap-4;
+  }
+
+  .mail-gmail-connected-icon {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white;
+  }
+
+  .mail-gmail-connected-icon svg {
+    @apply h-6 w-6;
+  }
+
+  .mail-gmail-connected-label {
+    @apply text-sm text-emerald-700;
+  }
+
+  .mail-gmail-connected-email {
+    @apply text-lg font-bold text-emerald-900;
+  }
+
+  .mail-gmail-active-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700;
+  }
+
+  .mail-gmail-active-dot {
+    @apply h-2 w-2 rounded-full bg-emerald-500;
+  }
+
+  .mail-gmail-meta-row {
+    @apply grid gap-4 border-y border-slate-100 py-5 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .mail-gmail-meta-item {
+    @apply flex items-start gap-3;
+  }
+
+  .mail-gmail-meta-item svg {
+    @apply mt-0.5 h-4 w-4 shrink-0 text-slate-400;
+  }
+
+  .mail-gmail-meta-label {
+    @apply block text-xs font-medium uppercase tracking-wide text-slate-500;
+  }
+
+  .mail-gmail-meta-value {
+    @apply block text-sm font-semibold text-slate-800;
+  }
+
+  .mail-gmail-reconnect-btn {
+    @apply inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+  }
+
+  .mail-gmail-reconnect-btn svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-gmail-disconnect-btn {
+    @apply inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50;
+  }
+
+  .mail-gmail-disconnect-btn svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-gmail-connect-panel {
+    @apply rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 text-center;
+  }
+
+  .mail-gmail-connect-panel p {
+    @apply m-0 mb-4 text-sm text-slate-600;
+  }
+
+  .mail-gmail-connect-btn {
+    @apply inline-flex items-center gap-2 rounded-lg border-0 bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700;
+  }
+
+  .mail-gmail-security {
+    @apply flex flex-wrap items-center gap-4 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-slate-50 px-5 py-4;
+  }
+
+  .mail-gmail-security-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-200 text-blue-700;
+  }
+
+  .mail-gmail-security-icon svg {
+    @apply h-5 w-5;
+  }
+
+  .mail-gmail-security-text {
+    @apply min-w-0 flex-1;
+  }
+
+  .mail-gmail-security-text strong {
+    @apply block text-sm font-semibold text-slate-900;
+  }
+
+  .mail-gmail-security-text p {
+    @apply m-0 mt-1 text-sm leading-relaxed text-slate-600;
+  }
+}
+
+@media (max-width: 1100px) {
+  .pipeline-master-detail {
+    @apply h-auto min-h-0;
+  }
+
+  .pipeline-master-pane {
+    @apply shrink overflow-visible;
+    flex: initial;
+  }
+
+  .pipeline-layout-divider {
+    @apply my-1;
+  }
+
+  .pipeline-detail-pane {
+    @apply shrink;
+    flex: initial;
+    min-height: 280px;
+  }
+
+  .pipeline-detail-scroll {
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 860px) {
+  .mail-dash-tip-art,
+  .mail-import-tip-art {
+    @apply hidden;
+  }
+
+  .mail-import-step-label {
+    @apply hidden sm:inline;
+  }
+}

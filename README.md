@@ -19,9 +19,28 @@ Edita `appsettings.json`:
 
 No compartas este token ni lo subas a repositorios públicos.
 
+## Estilos (Tailwind CSS)
+
+El proyecto usa **Tailwind CSS v4** (mismo enfoque que CommercialMail). Los estilos se compilan de `Styles/app.css` a `wwwroot/css/site.css`.
+
+```bash
+npm install
+npm run build:css
+```
+
+Durante el desarrollo, puedes dejar Tailwind en modo watch en otra terminal:
+
+```bash
+npm run watch:css
+```
+
+`dotnet build` también ejecuta `npm run build:css` automáticamente si existe `package.json`.
+
 ## Ejecutar desde terminal
 
 ```bash
+npm install
+npm run build:css
 dotnet restore
 dotnet run
 ```

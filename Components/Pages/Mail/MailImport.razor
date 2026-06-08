@@ -1,81 +1,264 @@
 @page "/mail/import"
 @rendermode InteractiveServer
 @inject IMailExcelImportService ImportService
+@inject NavigationManager Nav
 @using DirectorComercialIA.Mail.Models
 
-<h1>Import contacts from Excel</h1>
-<p class="muted">Map sheet headers (Nombre, Empresa, Email, Contacto, País, Idioma, Tipo Cliente). Emails are normalized; if a cell lists several addresses, the first one is used.</p>
-
-<div class="card task-section">
-    <h3>Upload and column mapping</h3>
-    <div class="task-form-grid">
-        <div class="field-group field-group-wide">
-            <label>Excel file (.xlsx)</label>
-            <InputFile OnChange="OnFileSelected" accept=".xlsx" />
+<div class="mail-import">
+    <header class="mail-import-header">
+        <div>
+            <h1>Import contacts from Excel</h1>
+            <p class="mail-import-lead">Map your Excel columns to contact fields. The first row of the file should contain headers.</p>
         </div>
-        <div class="field-group"><label>First name column</label><input @bind="mapping.FirstName" /></div>
-        <div class="field-group"><label>Last name column</label><input @bind="mapping.LastName" /></div>
-        <div class="field-group"><label>Company</label><input @bind="mapping.Company" /></div>
-        <div class="field-group"><label>Email *</label><input @bind="mapping.Email" required /></div>
-        <div class="field-group"><label>Country</label><input @bind="mapping.Country" /></div>
-        <div class="field-group"><label>Language</label><input @bind="mapping.Language" /></div>
-        <div class="field-group"><label>Customer type</label><input @bind="mapping.CustomerType" /></div>
-        <div class="field-group"><label>Job title / Contacto</label><input @bind="mapping.JobTitle" /></div>
-        <div class="field-group">
-            <label>Duplicates</label>
-            <select @bind="duplicateMode">
-                @foreach (DuplicateImportMode mode in Enum.GetValues<DuplicateImportMode>())
+        <div class="mail-import-header-actions">
+            <button type="button" class="mail-import-guide-btn" title="Import guide">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+                </svg>
+                View import guide
+            </button>
+            <div class="mail-import-help">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+                </svg>
+                Need help? Learn how to import contacts from Excel.
+            </div>
+        </div>
+    </header>
+
+    <div class="mail-import-stepper" aria-label="Import progress">
+        <div class="mail-import-step @(CurrentStep >= 1 ? "is-active" : "") @(CurrentStep > 1 ? "is-done" : "")">
+            <span class="mail-import-step-badge">1</span>
+            <span class="mail-import-step-label">Upload file</span>
+        </div>
+        <div class="mail-import-step-line @(CurrentStep > 1 ? "is-done" : "")"></div>
+        <div class="mail-import-step @(CurrentStep == 2 ? "is-active" : "") @(CurrentStep > 2 ? "is-done" : "")">
+            <span class="mail-import-step-badge">2</span>
+            <span class="mail-import-step-label">Map columns</span>
+        </div>
+        <div class="mail-import-step-line @(CurrentStep > 2 ? "is-done" : "")"></div>
+        <div class="mail-import-step @(CurrentStep >= 3 ? "is-active" : "")">
+            <span class="mail-import-step-badge">3</span>
+            <span class="mail-import-step-label">Review &amp; import</span>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert error">@error</div>
+    }
+
+    @if (result is null)
+    {
+        <section class="mail-import-card">
+            <h2 class="mail-import-card-title">Upload and column mapping</h2>
+            <div class="mail-import-card-body">
+                @if (fileBytes is null)
                 {
-                    <option value="@mode">@mode</option>
+                    <label class="mail-import-drop">
+                        <InputFile OnChange="OnFileSelected" accept=".xlsx" class="mail-import-hidden-file" />
+                        <span class="mail-import-drop-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" />
+                            </svg>
+                        </span>
+                        <strong>Drop your Excel file here or click to browse</strong>
+                        <span>.xlsx only · first row must be headers</span>
+                    </label>
                 }
-            </select>
+                else
+                {
+                    <div class="mail-import-file-bar">
+                        <div class="mail-import-file-info">
+                            <span class="mail-import-file-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h2M8 17h8M8 9h1" />
+                                </svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="mail-import-file-name">@fileName</p>
+                                <p class="mail-import-file-size">@fileSizeLabel</p>
+                            </div>
+                        </div>
+                        <label class="mail-import-change-btn">
+                            <InputFile OnChange="OnFileSelected" accept=".xlsx" class="mail-import-hidden-file" />
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" />
+                            </svg>
+                            Change file
+                        </label>
+                    </div>
+
+                    <div class="mail-import-grid">
+                        <div class="mail-import-field">
+                            <label>First name column</label>
+                            <select @bind="mapping.FirstName">
+                                @ColumnOptions(mapping.FirstName)
+                            </select>
+                        </div>
+                        <div class="mail-import-field">
+                            <label>Last name column</label>
+                            <select @bind="mapping.LastName">
+                                @ColumnOptions(mapping.LastName)
+                            </select>
+                        </div>
+                        <div class="mail-import-field">
+                            <label>Company</label>
+                            <select @bind="mapping.Company">
+                                @ColumnOptions(mapping.Company)
+                            </select>
+                        </div>
+                        <div class="mail-import-field">
+                            <label>Email <span class="mail-import-required">*</span></label>
+                            <select @bind="mapping.Email">
+                                @ColumnOptions(mapping.Email)
+                            </select>
+                        </div>
+                        <div class="mail-import-field">
+                            <label>Country</label>
+                            <select @bind="mapping.Country">
+                                @ColumnOptions(mapping.Country)
+                            </select>
+                        </div>
+                        <div class="mail-import-field">
+                            <label>Language</label>
+                            <select @bind="mapping.Language">
+                                @ColumnOptions(mapping.Language)
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mail-import-grid-row2">
+                        <div class="mail-import-field">
+                            <label>Customer type</label>
+                            <select @bind="mapping.CustomerType">
+                                @ColumnOptions(mapping.CustomerType)
+                            </select>
+                        </div>
+                        <div class="mail-import-field">
+                            <label>Job title / Contact</label>
+                            <select @bind="mapping.JobTitle">
+                                @ColumnOptions(mapping.JobTitle)
+                            </select>
+                        </div>
+                        <div class="mail-import-field">
+                            <label>Duplicates</label>
+                            <select @bind="duplicateMode">
+                                @foreach (var mode in DuplicateModes)
+                                {
+                                    <option value="@mode.Value">@mode.Label</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mail-import-field">
+                            <label>Campaign name (optional)</label>
+                            <input @bind="campaignName" placeholder="e.g., Q1 outreach" />
+                        </div>
+                    </div>
+
+                    <div class="mail-import-toggle-box">
+                        <div class="mail-import-toggle-text">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+                            </svg>
+                            <span>
+                                <strong>Import only rows with a valid email</strong>
+                                <span class="block text-slate-500">Rows without a valid email address will be skipped during import.</span>
+                            </span>
+                        </div>
+                        <label class="mail-import-toggle">
+                            <input type="checkbox" @bind="validOnly" />
+                            <span class="mail-import-toggle-track"></span>
+                            <span class="mail-import-toggle-thumb"></span>
+                        </label>
+                    </div>
+                }
+
+                <div class="mail-import-footer">
+                    <button type="button" class="mail-import-btn-back" @onclick="GoBack">Back</button>
+                    <div class="mail-import-footer-right">
+                        <button type="button" class="mail-import-btn-preview" @onclick="Preview" disabled="@(!CanRunActions)">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
+                            </svg>
+                            @(loading ? "Working..." : "Preview first")
+                        </button>
+                        <button type="button" class="mail-import-btn-run" @onclick="RunImport" disabled="@(!CanRunActions)">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" />
+                            </svg>
+                            Run import
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    }
+
+    @if (preview is not null && result is null)
+    {
+        <section class="mail-import-preview">
+            <div class="mail-import-preview-head">
+                <h3>Preview</h3>
+                <span>Up to 40 rows · fix issues before importing</span>
+            </div>
+            <div class="mail-import-preview-body">
+                <p class="muted mb-4 text-sm">Detected headers: <strong class="text-slate-700">@string.Join(", ", preview.Headers)</strong></p>
+                <div class="overflow-x-auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>Issues</th>
+                                <th>Sample</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var row in preview.Rows.Take(40))
+                        {
+                            <tr>
+                                <td class="tabular-nums">@row.RowNumber</td>
+                                <td class="text-sm text-red-700">@string.Join("; ", row.Errors)</td>
+                                <td class="max-w-md break-words text-sm">@string.Join(" | ", row.Cells.Take(4).Select(kv => $"{kv.Key}={kv.Value}"))</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    }
+
+    @if (result is not null)
+    {
+        <div class="alert ok">
+            <strong>Import finished.</strong> Batch #@result.ImportBatchId.
+            Total @result.TotalRows, valid @result.ValidRows, invalid @result.InvalidRows,
+            new @result.NewRows, updated @result.UpdatedRows, ignored dupes @result.IgnoredDuplicates.
+            <a href="/mail" class="mt-2 inline-block font-medium">Go to mail dashboard →</a>
         </div>
-        <div class="field-group"><label>Campaign name (optional)</label><input @bind="campaignName" placeholder="e.g. Q1 outreach" /></div>
-        <div class="field-group field-group-wide">
-            <label><input type="checkbox" @bind="validOnly" /> Import only rows with a valid email</label>
+    }
+
+    <aside class="mail-import-tip" role="note">
+        <div class="mail-import-tip-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M9 18h6" /><path d="M10 22h4" />
+                <path d="M12 2a7 7 0 0 0-4 12v2h8v-2a7 7 0 0 0-4-12z" />
+            </svg>
         </div>
-    </div>
-    <div class="actions">
-        <button @onclick="Preview" disabled="@(fileBytes is null || loading)">@(loading ? "Working..." : "Preview first")</button>
-        <button class="secondary" @onclick="RunImport" disabled="@(fileBytes is null || loading)">Run import</button>
-    </div>
+        <p><strong>Tip:</strong> For best results, ensure your file has clear column headers and valid email addresses.</p>
+        <div class="mail-import-tip-art" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 72" fill="none">
+                <rect x="8" y="20" width="28" height="36" rx="3" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5" />
+                <path d="M12 28h20M12 34h14M12 40h18" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M44 44 Q72 20 96 36" stroke="#93c5fd" stroke-width="2" stroke-dasharray="4 4" />
+                <path d="M96 36 L104 32 L100 42 Z" fill="#3b82f6" />
+                <path d="M98 48c0-8 6-14 14-14" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
+                <path d="M108 48l-4-4M108 48l-4 4" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </div>
+    </aside>
 </div>
-
-@if (!string.IsNullOrWhiteSpace(error))
-{
-    <div class="alert error">@error</div>
-}
-
-@if (preview is not null)
-{
-    <div class="card task-section">
-        <h3>Preview (up to 40 rows)</h3>
-        <p class="muted">Detected headers: @string.Join(", ", preview.Headers)</p>
-        <table>
-            <thead><tr><th>Row</th><th>Issues</th><th>Sample</th></tr></thead>
-            <tbody>
-            @foreach (var row in preview.Rows.Take(40))
-            {
-                <tr>
-                    <td>@row.RowNumber</td>
-                    <td>@string.Join("; ", row.Errors)</td>
-                    <td>@string.Join(" | ", row.Cells.Take(4).Select(kv => $"{kv.Key}={kv.Value}"))</td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
-}
-
-@if (result is not null)
-{
-    <div class="alert ok">
-        <strong>Import finished.</strong> Batch #@result.ImportBatchId.
-        Total @result.TotalRows, valid @result.ValidRows, invalid @result.InvalidRows,
-        new @result.NewRows, updated @result.UpdatedRows, ignored dupes @result.IgnoredDuplicates.
-        <a href="/mail">Go to mail dashboard →</a>
-    </div>
-}
 
 @code {
     private MailColumnMappingDto mapping = SpanishClientPreset();
@@ -83,10 +266,43 @@
     private string? campaignName;
     private bool validOnly = true;
     private byte[]? fileBytes;
+    private string? fileName;
+    private string fileSizeLabel = "";
+    private List<string> detectedHeaders = [];
     private MailImportPreviewResultDto? preview;
     private MailImportExecuteResultDto? result;
     private string? error;
     private bool loading;
+
+    private int CurrentStep =>
+        result is not null || preview is not null ? 3 :
+        fileBytes is not null ? 2 : 1;
+
+    private bool CanRunActions => fileBytes is not null && !loading && !string.IsNullOrWhiteSpace(mapping.Email);
+
+    private static readonly (DuplicateImportMode Value, string Label)[] DuplicateModes =
+    [
+        (DuplicateImportMode.Ignore, "Ignore duplicates"),
+        (DuplicateImportMode.Update, "Update existing"),
+        (DuplicateImportMode.NewOnly, "New contacts only")
+    ];
+
+    private RenderFragment ColumnOptions(string? _) => builder =>
+    {
+        builder.OpenElement(0, "option");
+        builder.AddAttribute(1, "value", "");
+        builder.AddContent(2, "Select column");
+        builder.CloseElement();
+
+        var seq = 3;
+        foreach (var header in detectedHeaders)
+        {
+            builder.OpenElement(seq++, "option");
+            builder.AddAttribute(seq++, "value", header);
+            builder.AddContent(seq++, header);
+            builder.CloseElement();
+        }
+    };
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
@@ -95,10 +311,61 @@
         result = null;
         var file = e.File;
         if (file is null) return;
+
         await using var stream = file.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms);
         fileBytes = ms.ToArray();
+        fileName = file.Name;
+        fileSizeLabel = FormatFileSize(fileBytes.Length);
+
+        loading = true;
+        try
+        {
+            await using var previewStream = new MemoryStream(fileBytes);
+            var headerPreview = await ImportService.PreviewAsync(previewStream);
+            detectedHeaders = headerPreview.Headers;
+            ApplyHeaderMatches();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            fileBytes = null;
+            fileName = null;
+            detectedHeaders = [];
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void ApplyHeaderMatches()
+    {
+        mapping.FirstName = MatchHeader(mapping.FirstName, "Nombre", "First name", "First Name");
+        mapping.LastName = MatchHeader(mapping.LastName, "Apellido", "Last name", "Last Name");
+        mapping.Company = MatchHeader(mapping.Company, "Empresa", "Company");
+        mapping.Email = MatchHeader(mapping.Email, "Email", "E-mail", "Correo");
+        mapping.Country = MatchHeader(mapping.Country, "País", "Pais", "Country");
+        mapping.Language = MatchHeader(mapping.Language, "Idioma", "Language");
+        mapping.CustomerType = MatchHeader(mapping.CustomerType, "Tipo Cliente", "Customer type", "Customer Type");
+        mapping.JobTitle = MatchHeader(mapping.JobTitle, "Contacto", "Job title", "Job Title", "Title");
+    }
+
+    private string? MatchHeader(string? current, params string[] candidates)
+    {
+        if (!string.IsNullOrWhiteSpace(current)
+            && detectedHeaders.Any(h => string.Equals(h, current, StringComparison.OrdinalIgnoreCase)))
+            return detectedHeaders.First(h => string.Equals(h, current, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var candidate in candidates)
+        {
+            var match = detectedHeaders.FirstOrDefault(h => string.Equals(h, candidate, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+                return match;
+        }
+
+        return current;
     }
 
     private async Task Preview()
@@ -110,6 +377,7 @@
         {
             await using var stream = new MemoryStream(fileBytes);
             preview = await ImportService.PreviewAsync(stream);
+            detectedHeaders = preview.Headers;
         }
         catch (Exception ex)
         {
@@ -123,7 +391,7 @@
 
     private async Task RunImport()
     {
-        if (fileBytes is null) return;
+        if (fileBytes is null || string.IsNullOrWhiteSpace(mapping.Email)) return;
         loading = true;
         error = null;
         try
@@ -140,6 +408,36 @@
         {
             loading = false;
         }
+    }
+
+    private void GoBack()
+    {
+        if (preview is not null)
+        {
+            preview = null;
+            return;
+        }
+
+        if (fileBytes is not null)
+        {
+            fileBytes = null;
+            fileName = null;
+            fileSizeLabel = "";
+            detectedHeaders = [];
+            preview = null;
+            error = null;
+            return;
+        }
+
+        Nav.NavigateTo("/mail");
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        var kb = bytes / 1024.0;
+        if (kb < 1024) return $"{kb:0.#} KB";
+        return $"{kb / 1024.0:0.#} MB";
     }
 
     private static MailColumnMappingDto SpanishClientPreset() => new()

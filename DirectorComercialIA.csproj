@@ -25,4 +25,8 @@
     <Folder Include="Pages\Shared\" />
   </ItemGroup>
 
+  <Target Name="BuildTailwindCss" BeforeTargets="Build" Condition="Exists('$(ProjectDir)package.json')">
+    <Exec WorkingDirectory="$(ProjectDir)" Command="npm run build:css" />
+  </Target>
+
 </Project>

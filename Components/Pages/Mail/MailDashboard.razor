@@ -2,42 +2,161 @@
 @rendermode InteractiveServer
 @inject IMailContactQueryService ContactQuery
 
-<h1>Mail Dashboard</h1>
-<p class="muted">Contacts across your five-phase mail workflow. Open a phase to compose, send, and track replies.</p>
+<div class="mail-dash">
+    <header class="mail-dash-header">
+        <div class="mail-dash-header-main">
+            <h1>Mail Dashboard</h1>
+            <p class="mail-dash-lead">Contacts across your five-phase mail workflow. Open a phase to compose, send, and track replies.</p>
+        </div>
+        <div class="mail-dash-toolbar">
+            <button type="button" class="mail-dash-icon-btn" aria-label="Notifications" title="Notifications">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                @if (pipelineNotReplied > 0)
+                {
+                    <span class="mail-dash-badge">@pipelineNotReplied</span>
+                }
+            </button>
+            <div class="mail-dash-date-range" title="Current week">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                <span>@weekRangeLabel</span>
+            </div>
+        </div>
+    </header>
 
-@if (phases is not null)
-{
-    <section class="cards">
-        <div class="card"><strong>@pipelineTotal</strong><span>In pipeline</span></div>
-        <div class="card"><strong>@pipelineReplied</strong><span>Replied</span></div>
-        <div class="card"><strong>@pipelineNotReplied</strong><span>Awaiting reply</span></div>
-        <div class="card warning"><strong>@pipelineBounced</strong><span>Bounced</span></div>
-    </section>
-
-    <h2>Pipeline phases</h2>
-    <div class="mail-phase-grid">
-        @foreach (var m in phases)
-        {
-            <a class="card mail-phase-card" href="/mail/phase/@m.Phase">
-                <strong>Phase @m.Phase</strong>
-                <span>@PhaseBlurb(m.Phase)</span>
-                <div class="mail-phase-metrics">
-                    <span>In phase: @m.TotalInPhase</span>
-                    <span>Replied: @m.Replied</span>
-                    <span>Not replied: @m.NotReplied</span>
-                    <span>Bounced: @m.Bounced</span>
+    @if (phases is not null)
+    {
+        <section class="mail-dash-kpis" aria-label="Pipeline totals">
+            <article class="mail-dash-kpi mail-dash-kpi-blue">
+                <div class="mail-dash-kpi-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path d="M22 2 11 13" /><path d="M22 2 15 22 11 13 2 9 22 2z" />
+                    </svg>
                 </div>
-            </a>
-        }
-    </div>
-}
+                <div class="mail-dash-kpi-body">
+                    <strong>@pipelineTotal</strong>
+                    <span>In pipeline</span>
+                </div>
+                <div class="mail-dash-kpi-chart" aria-hidden="true">
+                    <svg class="mail-dash-spark-blue" viewBox="0 0 100 36" preserveAspectRatio="none"><path d="@SparklinePath(0.55, 0.35, 0.7, 0.45, 0.85, 0.6)" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </div>
+            </article>
+
+            <article class="mail-dash-kpi mail-dash-kpi-green">
+                <div class="mail-dash-kpi-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                </div>
+                <div class="mail-dash-kpi-body">
+                    <strong>@pipelineReplied</strong>
+                    <span>Replied</span>
+                </div>
+                <div class="mail-dash-kpi-chart" aria-hidden="true">
+                    <svg class="mail-dash-spark-green" viewBox="0 0 100 36" preserveAspectRatio="none"><path d="@SparklinePath(0.2, 0.45, 0.3, 0.55, 0.25, 0.4)" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </div>
+            </article>
+
+            <article class="mail-dash-kpi mail-dash-kpi-orange">
+                <div class="mail-dash-kpi-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
+                    </svg>
+                </div>
+                <div class="mail-dash-kpi-body">
+                    <strong>@pipelineNotReplied</strong>
+                    <span>Awaiting reply</span>
+                </div>
+                <div class="mail-dash-kpi-chart" aria-hidden="true">
+                    <svg class="mail-dash-spark-orange" viewBox="0 0 100 36" preserveAspectRatio="none"><path d="@SparklinePath(0.65, 0.5, 0.75, 0.55, 0.8, 0.7)" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </div>
+            </article>
+
+            <article class="mail-dash-kpi mail-dash-kpi-red">
+                <div class="mail-dash-kpi-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        <path d="M12 8v4M12 16h.01" />
+                    </svg>
+                </div>
+                <div class="mail-dash-kpi-body">
+                    <strong>@pipelineBounced</strong>
+                    <span>Bounced</span>
+                </div>
+                <div class="mail-dash-kpi-chart" aria-hidden="true">
+                    <svg class="mail-dash-spark-red" viewBox="0 0 100 36" preserveAspectRatio="none"><path d="@SparklinePath(0.15, 0.2, 0.18, 0.22, 0.16, 0.2)" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </div>
+            </article>
+        </section>
+
+        <section class="mail-dash-pipeline" aria-labelledby="mail-pipeline-heading">
+            <div class="mail-dash-section-head">
+                <h2 id="mail-pipeline-heading">Pipeline phases</h2>
+                <p>Track progress across each stage of your five-phase mail workflow.</p>
+            </div>
+
+            <div class="mail-dash-phase-grid">
+                @foreach (var m in phases)
+                {
+                    var meta = PhaseMeta(m.Phase);
+                    <a class="mail-dash-phase-card mail-dash-phase-@m.Phase" href="/mail/phase/@m.Phase">
+                        <div class="mail-dash-phase-icon" aria-hidden="true">
+                            @((MarkupString)meta.IconSvg)
+                        </div>
+                        <p class="mail-dash-phase-label">Phase @m.Phase</p>
+                        <h3>@meta.Title</h3>
+                        <p class="mail-dash-phase-desc">@meta.Description</p>
+                        <ul class="mail-dash-phase-stats">
+                            <li><span class="mail-dash-dot mail-dash-dot-blue"></span>In pipeline <strong>@m.TotalInPhase</strong></li>
+                            <li><span class="mail-dash-dot mail-dash-dot-green"></span>Replied <strong>@m.Replied</strong></li>
+                            <li><span class="mail-dash-dot mail-dash-dot-orange"></span>Not replied <strong>@m.NotReplied</strong></li>
+                            <li><span class="mail-dash-dot mail-dash-dot-red"></span>Bounced <strong>@m.Bounced</strong></li>
+                        </ul>
+                        <span class="mail-dash-phase-cta">View phase <span aria-hidden="true">→</span></span>
+                    </a>
+                }
+            </div>
+        </section>
+
+        <aside class="mail-dash-tip" role="note">
+            <div class="mail-dash-tip-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M9 18h6" /><path d="M10 22h4" />
+                    <path d="M12 2a7 7 0 0 0-4 12v2h8v-2a7 7 0 0 0-4-12z" />
+                </svg>
+            </div>
+            <p><strong>Tip:</strong> Keep your pipeline moving by following up with contacts who haven't replied.</p>
+            <div class="mail-dash-tip-art" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" fill="none">
+                    <path d="M8 52 Q40 20 72 38" stroke="#93c5fd" stroke-width="2" stroke-dasharray="4 4" />
+                    <path d="M72 38 L80 34 L76 44 Z" fill="#3b82f6" />
+                    <rect x="82" y="18" width="28" height="20" rx="3" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5" />
+                    <path d="M82 22 L96 32 L82 38 Z" fill="#3b82f6" opacity="0.5" />
+                </svg>
+            </div>
+        </aside>
+    }
+</div>
 
 @code {
     private List<MailPhaseMetricsDto>? phases;
     private int pipelineTotal, pipelineReplied, pipelineNotReplied, pipelineBounced;
+    private string weekRangeLabel = "";
 
     protected override async Task OnInitializedAsync()
     {
+        var today = DateTime.Today;
+        var weekStart = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
+        if (today.DayOfWeek == DayOfWeek.Sunday)
+            weekStart = today.AddDays(-6);
+        var weekEnd = weekStart.AddDays(6);
+        weekRangeLabel = $"{weekStart:MMM d} – {weekEnd:MMM d, yyyy}";
+
         phases = new List<MailPhaseMetricsDto>();
         for (var p = 1; p <= 5; p++)
             phases.Add(await ContactQuery.GetPhaseMetricsAsync(p));
@@ -48,13 +167,35 @@
         pipelineBounced = phases.Sum(x => x.Bounced);
     }
 
-    private static string PhaseBlurb(int phase) => phase switch
+    private static string SparklinePath(params double[] points)
     {
-        1 => "First outreach to imported contacts.",
-        2 => "Follow up with non-responders.",
-        3 => "Continue the conversation.",
-        4 => "Late-stage engagement.",
-        5 => "Final step before archival or handoff.",
-        _ => "Workflow step."
+        const double width = 100;
+        const double height = 36;
+        var step = width / (points.Length - 1);
+        var path = new System.Text.StringBuilder();
+        for (var i = 0; i < points.Length; i++)
+        {
+            var x = i * step;
+            var y = height - (points[i] * height);
+            path.Append(i == 0 ? $"M{x:0.##},{y:0.##}" : $" L{x:0.##},{y:0.##}");
+        }
+
+        return path.ToString();
+    }
+
+    private static (string Title, string Description, string IconSvg) PhaseMeta(int phase) => phase switch
+    {
+        1 => ("First outreach", "First outreach to imported contacts.",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\"/><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"/></svg>"),
+        2 => ("Follow up", "Follow up with non-responders.",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d=\"M3 3v5h5\"/></svg>"),
+        3 => ("Continue", "Continue the conversation.",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg>"),
+        4 => ("Engagement", "Late-stage engagement.",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75\"/></svg>"),
+        5 => ("Final step", "Final step before archiving or handoff.",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z\"/><line x1=\"4\" y1=\"22\" x2=\"4\" y2=\"15\"/></svg>"),
+        _ => ("Workflow step", "Mail workflow phase.",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><circle cx=\"12\" cy=\"12\" r=\"10\"/></svg>")
     };
 }
